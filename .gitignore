@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════════════════
+# DARKPENBOOT PRO — .gitignore
+# ═══════════════════════════════════════════════════════════════
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# PyInstaller
+*.spec
+!buildozer.spec
+
+# Nix
+result
+result-*
+.direnv/
+.envrc
+
+# Buildozer / Android
+.buildozer/
+bin/
+*.apk
+*.aab
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Config local
+config_local.json
+*.log
+logs/
+
+# Artefatos
+*.iso
+*.img
+*.parcial
+*.html_error

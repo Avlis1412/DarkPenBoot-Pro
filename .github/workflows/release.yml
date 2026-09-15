@@ -1,0 +1,103 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DARKPENBOOT PRO — Release Automática
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Criado automaticamente quando você faz:
+#   git tag v3.5.0
+#   git push origin v3.5.0
+#
+# Baixa todos os artefatos do build.yml e cria uma Release oficial
+# no GitHub com os binários de Windows, Linux, macOS e Android.
+#
+# 🟣 Inspirado em NixOS — build reprodutível + verificável
+# 🟣 NixOS® é marca da NixOS Foundation (sem afiliação)
+# ═══════════════════════════════════════════════════════════════════════════
+name: Release Automática
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Cria a Release com todos os artefatos
+  # ═══════════════════════════════════════════════════════════════════════
+  create-release:
+    name: 🚀 Criar Release no GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      # ─── Baixa artefatos do build.yml (se existirem) ─────────────────
+      - name: 📥 Baixar Windows
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: DarkPenBoot-Windows
+          path: artifacts/windows/
+
+      - name: 📥 Baixar Linux
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: DarkPenBoot-Linux
+          path: artifacts/linux/
+
+      - name: 📥 Baixar macOS
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: DarkPenBoot-macOS
+          path: artifacts/macos/
+
+      - name: 📥 Baixar Android
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: DarkPenBoot-Android
+          path: artifacts/android/
+
+      - name: 📋 Listar arquivos baixados
+        run: |
+          echo "═══════════════════════════════════════════════"
+          echo "  Arquivos disponíveis para a Release"
+          echo "═══════════════════════════════════════════════"
+          find artifacts -type f -exec ls -lh {} \; 2>/dev/null || true
+
+      # ─── Cria a Release ─────────────────────────────────────────────
+      - name: 🚀 Criar Release no GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "DarkPenBoot Pro ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            # 🚀 DarkPenBoot Pro ${{ github.ref_name }}
+
+            ## 📦 Downloads
+
+            | Plataforma | Arquivo | Como usar |
+            |-----------|---------|-----------|
+            | 🪟 Windows | `DarkPenBoot.exe` | Baixe e execute |
+            | 🐧 Linux | `darkpenboot` | `chmod +x darkpenboot && ./darkpenboot` |
+            | 🍏 macOS | `DarkPenBoot` | `chmod +x DarkPenBoot && ./DarkPenBoot` |
+            | 📱 Android | `darkpenboot-*.apk` | Baixe e instale no celular |
+
+            ## 🔐 Verificação SHA256
+
+            Cada artefato vem com um arquivo `.sha256` para verificação.
+
+            ### Linux / macOS
+
+            ```bash
+            sha256sum -c darkpenboot.sha256
+            # ou
+            shasum -a 256 -c DarkPenBoot.sha256

@@ -1,0 +1,247 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DARKPENBOOT PRO — GitHub Actions — Build Multi-Plataforma
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 🟣 INSPIRAÇÃO NIXOS: build reprodutível em ambientes isolados
+# 🟣 NixOS® é marca da NixOS Foundation (sem afiliação)
+#
+# Gera automaticamente:
+#   🪟 Windows  → DarkPenBoot.exe
+#   🐧 Linux    → darkpenboot (binário ELF)
+#   🍏 macOS    → DarkPenBoot (binário Mach-O)
+#   📱 Android  → darkpenboot-*.apk
+# ═══════════════════════════════════════════════════════════════════════════
+name: Build Multiplataforma
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 1 — BUILD WINDOWS (.exe)
+  # ═══════════════════════════════════════════════════════════════════════
+  build-windows:
+    name: 🪟 Build Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Instalar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar PyInstaller
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow requests
+
+      - name: 🔍 Verificar sintaxe
+        shell: pwsh
+        run: |
+          python -m py_compile DarkPenBoot_PRO1.py
+          Write-Host "✅ Sintaxe OK"
+
+      - name: 🏗️ Gerar .exe com PyInstaller
+        shell: pwsh
+        run: |
+          Write-Host "🟣 Inspirado em NixOS — build reprodutível"
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name "DarkPenBoot" `
+            --distpath dist `
+            --workpath build `
+            --specpath . `
+            --noconfirm `
+            --clean `
+            DarkPenBoot_PRO1.py
+          Get-ChildItem dist/
+
+      - name: 🔐 Calcular SHA256 do .exe
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash dist/DarkPenBoot.exe -Algorithm SHA256).Hash
+          Write-Host "SHA256: $hash"
+          $hash | Out-File dist/DarkPenBoot.exe.sha256 -Encoding ASCII
+
+      - name: 📤 Upload artefato Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkPenBoot-Windows
+          path: |
+            dist/DarkPenBoot.exe
+            dist/DarkPenBoot.exe.sha256
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 2 — BUILD LINUX (binário)
+  # ═══════════════════════════════════════════════════════════════════════
+  build-linux:
+    name: 🐧 Build Linux (binário)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependências de sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk python3-pip \
+            p7zip-full curl wget file
+
+      - name: 📦 Instalar PyInstaller
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller pillow requests
+
+      - name: 🏗️ Gerar binário Linux
+        run: |
+          echo "🟣 Inspirado em NixOS — build reprodutível"
+          pyinstaller \
+            --onefile \
+            --name darkpenboot \
+            --distpath dist \
+            --workpath build \
+            --specpath . \
+            --noconfirm \
+            --clean \
+            DarkPenBoot_PRO1.py
+          ls -lh dist/
+          file dist/darkpenboot
+
+      - name: 🔐 SHA256
+        run: |
+          sha256sum dist/darkpenboot > dist/darkpenboot.sha256
+          cat dist/darkpenboot.sha256
+
+      - name: 📤 Upload artefato Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkPenBoot-Linux
+          path: |
+            dist/darkpenboot
+            dist/darkpenboot.sha256
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 3 — BUILD macOS (binário)
+  # ═══════════════════════════════════════════════════════════════════════
+  build-macos:
+    name: 🍏 Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow requests
+
+      - name: 🏗️ Gerar binário macOS
+        run: |
+          echo "🟣 Inspirado em NixOS — build reprodutível"
+          pyinstaller \
+            --onefile \
+            --windowed \
+            --name DarkPenBoot \
+            --distpath dist \
+            --workpath build \
+            --specpath . \
+            --noconfirm \
+            --clean \
+            DarkPenBoot_PRO1.py
+          ls -lh dist/
+
+      - name: 🔐 SHA256
+        run: |
+          shasum -a 256 dist/DarkPenBoot > dist/DarkPenBoot.sha256
+          cat dist/DarkPenBoot.sha256
+
+      - name: 📤 Upload artefato macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkPenBoot-macOS
+          path: |
+            dist/DarkPenBoot
+            dist/DarkPenBoot.sha256
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 4 — BUILD ANDROID (.apk via Kivy + Buildozer)
+  # ═══════════════════════════════════════════════════════════════════════
+  build-android:
+    name: 📱 Build Android (.apk)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔍 Verificar se há versão Kivy
+        id: check_kivy
+        run: |
+          if [ -f "darkpenboot_kivy.py" ] && [ -f "buildozer.spec" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "✅ Versão Kivy encontrada"
+          elif [ -f "main.py" ] && [ -f "buildozer.spec" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "✅ main.py encontrado"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Versão Kivy não encontrada — pulando Android"
+          fi
+
+      - name: 🐍 Setup Python
+        if: steps.check_kivy.outputs.found == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Instalar Buildozer
+        if: steps.check_kivy.outputs.found == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk \
+            python3-pip autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev
+          pip install --user buildozer cython
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: 🏗️ Gerar APK
+        if: steps.check_kivy.outputs.found == 'true'
+        run: |
+          echo "📱 Build Android via Buildozer..."
+          buildozer android debug
+        timeout-minutes: 60
+
+      - name: 📤 Upload APK
+        if: steps.check_kivy.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkPenBoot-Android
+          path: bin/*.apk
+          retention-days: 30
