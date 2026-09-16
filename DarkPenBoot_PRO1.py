@@ -7219,6 +7219,7 @@ class DarkPenBoot:
         bc = self._make_button(btn_frame, "🗑️", self._clear_log, width=70)
         bc.grid(row=0, column=1, padx=1, sticky='ew')
         self._add_tip(bc, "🗑️ Limpa log (Ctrl+L)")
+        # ── v3.6.1: doação única no rodapé ──
         ba = self._make_button(btn_frame, "ℹ️ Sobre",
                     lambda: self._show_about(), width=96)
         ba.grid(row=0, column=2, padx=1, sticky='ew')
@@ -7537,6 +7538,41 @@ class DarkPenBoot:
         except Exception as e:
             self.log(f"⚠️ Erro ao abrir site: {e}", is_warning=True)
 
+
+    def _toggle_favorite(self):
+        """v3.6.1: Favorita a ISO atual."""
+        try:
+            if not self.iso_path or not os.path.isfile(self.iso_path):
+                self._popup_info("Favoritos",
+                                 "Nenhuma ISO selecionada.")
+                return
+            nome = os.path.basename(self.iso_path)
+            self.log(f"\u2764\ufe0f Favoritado: {nome}", is_success=True)
+            self.trigger_reactive_pulse(2, 800)
+            self._popup_info("\u2764\ufe0f Favorito",
+                             f"ISO marcada como favorita:\n{nome}")
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", is_warning=True)
+
+    def _open_ads_settings(self):
+        """v3.6.1: Preferencias de anuncios."""
+        try:
+            self._popup_info(
+                "\U0001f4e2 An\u00fancios",
+                "Vers\u00e3o gratuita cont\u00e9m an\u00fancios.\n\n"
+                f"Assine o PREMIUM ({PREMIUM_PRICE_BRL}) para remov\u00ea-los.\n\n"
+                f"\U0001f310 {PREMIUM_CHECKOUT_URL}")
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", is_warning=True)
+
+    def _open_mobile_page(self):
+        """v3.6.1: Abre a p\u00e1gina da vers\u00e3o mobile."""
+        try:
+            url = GITHUB_URL + "/releases"
+            self.log(f"\U0001f4f1 Abrindo vers\u00e3o mobile: {url}", is_info=True)
+            webbrowser.open(url)
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", is_warning=True)
     def _open_donate(self):
         dlg = tk.Toplevel(self.root)
         dlg.title("❤️ Doar via PIX")

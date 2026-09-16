@@ -48,12 +48,13 @@ from kivy.core.window import Window
 from kivy.clock import Clock, mainthread
 from kivy.metrics import dp, sp
 from kivy.utils import platform, get_color_from_hex
-from kivy.graphics import Color, RoundedRectangle, Rectangle
+from kivy.graphics import Color, RoundedRectangle, Rectangle, Ellipse
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 from kivy.uix.spinner import Spinner
 from kivy.uix.progressbar import ProgressBar
@@ -71,6 +72,82 @@ from kivy.properties import (
 IS_ANDROID = platform == 'android'
 IS_IOS = platform == 'ios'
 IS_MOBILE = IS_ANDROID or IS_IOS
+
+# ── v3.6.1: pulso neon global ──
+GLOBAL_PULSE_STATE = {
+    "active": False,
+    "phase": 0,
+    "interval_ms": 80,
+    "color_cycle_phase": 0,
+    "color_cycle_index": 0,
+    "_event": None,
+}
+REACTIVE_PULSE_STATE = {
+    "active": False,
+    "intensity": 0,
+    "until_ts": 0.0,
+    "phase": 0,
+}
+_PULSE_SUBSCRIBERS = []
+
+def _trigger_reactive_pulse(intensity=2, duration_ms=1200):
+    try:
+        intensity = max(0, min(3, int(intensity)))
+    except Exception:
+        intensity = 2
+    REACTIVE_PULSE_STATE["active"] = True
+    REACTIVE_PULSE_STATE["intensity"] = intensity
+    REACTIVE_PULSE_STATE["until_ts"] = (
+        time.time() * 1000 + max(200, int(duration_ms)))
+    REACTIVE_PULSE_STATE["phase"] = 0
+
+def _start_global_pulse():
+    if GLOBAL_PULSE_STATE["active"]:
+        return
+    GLOBAL_PULSE_STATE["active"] = True
+    GLOBAL_PULSE_STATE["phase"] = 0
+    GLOBAL_PULSE_STATE["color_cycle_phase"] = 0
+    GLOBAL_PULSE_STATE["color_cycle_index"] = 0
+    GLOBAL_PULSE_STATE["_event"] = Clock.schedule_interval(
+        _pulse_tick, GLOBAL_PULSE_STATE["interval_ms"] / 1000.0)
+
+def _stop_global_pulse():
+    if not GLOBAL_PULSE_STATE["active"]:
+        return
+    GLOBAL_PULSE_STATE["active"] = False
+    ev = GLOBAL_PULSE_STATE.get("_event")
+    if ev is not None:
+        try: ev.cancel()
+        except Exception: pass
+    GLOBAL_PULSE_STATE["_event"] = None
+
+def _pulse_tick(dt):
+    reactive = REACTIVE_PULSE_STATE["active"]
+    if reactive and time.time() * 1000 > REACTIVE_PULSE_STATE["until_ts"]:
+        REACTIVE_PULSE_STATE["active"] = False
+        REACTIVE_PULSE_STATE["intensity"] = 0
+        reactive = False
+    if not GLOBAL_PULSE_STATE["active"] and not reactive:
+        return False
+    if GLOBAL_PULSE_STATE["active"]:
+        GLOBAL_PULSE_STATE["phase"] = (
+            GLOBAL_PULSE_STATE["phase"] + 1) % 16
+        GLOBAL_PULSE_STATE["color_cycle_phase"] = (
+            GLOBAL_PULSE_STATE.get("color_cycle_phase", 0) + 1) % 16
+        if GLOBAL_PULSE_STATE["color_cycle_phase"] == 0:
+            total = max(1, len(THEMES))
+            GLOBAL_PULSE_STATE["color_cycle_index"] = (
+                GLOBAL_PULSE_STATE.get("color_cycle_index", 0) + 1) % total
+    if reactive:
+        REACTIVE_PULSE_STATE["phase"] = (
+            REACTIVE_PULSE_STATE["phase"] + 1) % 16
+    for w in list(_PULSE_SUBSCRIBERS):
+        try:
+            if hasattr(w, "_redraw"): w._redraw()
+            elif hasattr(w, "_draw"): w._draw()
+        except Exception:
+            pass
+    return True
 IS_TERMUX = os.environ.get('TERMUX_VERSION') is not None
 IS_WINDOWS = platform == 'win'
 IS_LINUX = platform == 'linux'
@@ -80,7 +157,7 @@ IS_MAC = platform == 'macosx'
 # CONSTANTES
 # ═════════════════════════════════════════════════════════════════════
 APP_NAME = "DarkPenBoot Pro"
-APP_VERSION = "3.5.0"
+APP_VERSION = "3.6.1"
 APP_AUTHOR = "Adriano Rodrigues da Silva"
 GITHUB_URL = "https://github.com/Avlis1412"
 
@@ -641,6 +718,157 @@ def _post_download(destino, url, log_cb):
 # ═════════════════════════════════════════════════════════════════════
 # KIVY UI — WIDGETS CUSTOMIZADOS
 # ═════════════════════════════════════════════════════════════════════
+def _ensure_linux_mkfs_tools(log_func=None):
+    """Garante que as ferramentas mkfs estejam disponíveis (Android/Termux)."""
+    needed = {
+        'mkfs.vfat':  ['mkfs.fat', 'mkdosfs'],
+        'mkfs.ntfs':  ['mkntfs', 'ntfs-3g'],
+        'mkfs.exfat': ['mkexfatfs', 'exfatprogs'],
+        'mkfs.ext4':  ['mke2fs'],
+    }
+    import shutil as _sh
+    missing = []
+    for tool, alts in needed.items():
+        if _sh.which(tool):
+            continue
+        if not any(_sh.which(a) for a in alts):
+            missing.append(tool)
+    if missing and log_func:
+        log_func("⚠️ mkfs ausentes (Termux): " + ", ".join(missing),
+                 is_warning=True)
+        log_func("   💡 pkg install dosfstools ntfs-3g exfatprogs e2fsprogs",
+                 is_info=True)
+    return missing
+
+
+def _scan_shell_all_platforms(log_func=None):
+    """Varredura universal via shell (Android/Termux)."""
+    import subprocess as _sp
+    found = []
+    try:
+        r = _sp.run(["lsblk", "-J", "-o",
+                     "NAME,TYPE,SIZE,MODEL,TRAN,SERIAL,RM"],
+                    capture_output=True, text=True, timeout=15)
+        if r.returncode == 0 and r.stdout.strip():
+            import json as _j
+            data = _j.loads(r.stdout)
+            for dev in data.get("blockdevices", []):
+                if dev.get("type") != "disk":
+                    continue
+                name = dev.get("name", "")
+                if not name:
+                    continue
+                is_usb = (str(dev.get("tran") or "").lower() == "usb"
+                          or dev.get("rm") in (True, "1", 1))
+                if not is_usb:
+                    continue
+                found.append({
+                    "DiskNumber": name,
+                    "Model": (dev.get("model") or "USB").strip(),
+                    "Size": 0,
+                    "Letters": "",
+                    "BusType": "USB",
+                    "DevicePath": "/dev/block/" + name,
+                    "SerialNumber": (dev.get("serial") or "").strip(),
+                    "PNPDeviceID": "",
+                })
+    except Exception:
+        pass
+    if log_func:
+        log_func("Varredura shell: " + str(len(found)) + " disp.",
+                 is_info=True)
+    return found
+
+
+
+# ───────────────────────────────────────────────────────
+# v3.6.1 — HeartPulseButton (Kivy)
+# Coração multicolor animado com anéis pulsantes
+# ───────────────────────────────────────────────────────
+class HeartPulseButton(Widget):
+    def __init__(self, command=None, theme_key_getter=None, **kwargs):
+        super().__init__(**kwargs)
+        self._command = command
+        self._theme_key_getter = theme_key_getter
+        self._phase = 0
+        self._pressed = False
+        self.size_hint = (None, None)
+        self.size = (dp(54), dp(40))
+        # Label interno com o emoji
+        self._label = Label(
+            text='\u2764\ufe0f',
+            font_size=sp(20),
+            bold=True,
+            halign='center',
+            valign='middle',
+            color=(1, 0.4, 0.6, 1),
+        )
+        self.add_widget(self._label)
+        self.bind(pos=self._redraw, size=self._redraw)
+        self._event = Clock.schedule_interval(self._tick, 1 / 30.0)
+        _PULSE_SUBSCRIBERS.append(self)
+
+    def _palette(self):
+        try:
+            tk = self._theme_key_getter() if self._theme_key_getter else 'soft_dark'
+            t = THEMES.get(tk, THEMES.get('soft_dark', {}))
+            return [
+                get_color_from_hex(t.get('accent', '#ff5252')),
+                get_color_from_hex(t.get('accent2', '#ff79c6')),
+                get_color_from_hex(t.get('info', '#89b4fa')),
+                get_color_from_hex(t.get('success', '#a6e3a1')),
+                get_color_from_hex(t.get('warning', '#f9e2af')),
+            ]
+        except Exception:
+            return [(1, 0.3, 0.4, 1)]
+
+    def _tick(self, dt):
+        self._phase = (self._phase + 1) % 64
+        self._redraw()
+        return True
+
+    def _redraw(self, *args):
+        try:
+            self.canvas.before.clear()
+            self.canvas.after.clear()
+        except Exception:
+            return
+        palette = self._palette()
+        idx = (self._phase // 12) % len(palette)
+        col = palette[idx]
+        cx, cy = self.center_x, self.center_y
+        with self.canvas.before:
+            # Anéis pulsantes
+            for i in range(6):
+                rr = dp(14) + i * dp(2.2) + dp(3) * abs(3 - (self._phase % 8))
+                Color(col[0], col[1], col[2], max(0.15, 0.7 - i * 0.1))
+                Line(circle=(cx, cy, rr), width=1.2)
+        # Atualiza cor do label
+        try:
+            self._label.color = col
+            sz = 18 + int(2 * abs(3 - (self._phase % 8)))
+            if self._pressed:
+                sz -= 2
+            self._label.font_size = sp(sz)
+        except Exception:
+            pass
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self._pressed = True
+            if self._command:
+                try: self._command()
+                except Exception: pass
+            return True
+        return super().on_touch_down(touch)
+
+    def on_touch_up(self, touch):
+        if self._pressed:
+            self._pressed = False
+            return True
+        return super().on_touch_up(touch)
+
+
 class RoundedButton(Button):
     """Botão com cantos arredondados e cores do tema."""
 
@@ -659,6 +887,26 @@ class RoundedButton(Button):
             self._rect = RoundedRectangle(
                 pos=self.pos, size=self.size, radius=[self._radius])
         self.bind(pos=self._update_rect, size=self._update_rect)
+
+    def _glassify(self, hex_color):
+        """v3.6.1: mistura a cor com o fundo (efeito translúcido)."""
+        try:
+            h = hex_color.lstrip('#')
+            r = int(h[0:2], 16); g = int(h[2:4], 16); b = int(h[4:6], 16)
+            try:
+                bg = self.parent.bg_color if hasattr(self.parent, 'bg_color') else None
+                if bg and len(bg) >= 3:
+                    pr, pg, pb = int(bg[0]*255), int(bg[1]*255), int(bg[2]*255)
+                else:
+                    pr, pg, pb = 20, 22, 30
+            except Exception:
+                pr, pg, pb = 20, 22, 30
+            nr = int(r * 0.65 + pr * 0.35)
+            ng = int(g * 0.65 + pg * 0.35)
+            nb = int(b * 0.65 + pb * 0.35)
+            return f"#{nr:02x}{ng:02x}{nb:02x}"
+        except Exception:
+            return hex_color
 
     def _update_rect(self, *args):
         self._rect.pos = self.pos
@@ -726,6 +974,11 @@ class DarkPenBootKivyApp(App):
         self._cancel_download = False
         self._download_thread = None
         self._log_lines = []
+        # ── v3.6.1: PgUp/PgDown ──
+        try:
+            Window.bind(on_key_down=self._on_key_down)
+        except Exception:
+            pass
 
     # ─── Helpers de tema ──────────────────────────────────────────
     def get_theme(self) -> dict:
@@ -748,6 +1001,69 @@ class DarkPenBootKivyApp(App):
         self.log_text = "\n".join(self._log_lines[-200:])
 
     # ─── Build UI ─────────────────────────────────────────────────
+
+
+    def _toggle_favorite(self):
+        """v3.6.1: Favorita a ISO atual."""
+        try:
+            if not self.selected_iso:
+                self._show_info("Favoritos",
+                                "Nenhuma ISO selecionada.")
+                return
+            nome = Path(self.selected_iso).name
+            self.log(f"\u2764\ufe0f Favoritado: {nome}", "success")
+            _trigger_reactive_pulse(2, 800)
+            self._show_info("\u2764\ufe0f Favorito",
+                            f"ISO marcada como favorita:\n{nome}")
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", "warning")
+
+    def _open_donate(self):
+        """v3.6.1: Abre pagina de doacao PIX."""
+        try:
+            self.log("\u2764\ufe0f Abrindo pagina de doacao...", "info")
+            try:
+                webbrowser.open(GITHUB_URL)
+            except Exception:
+                pass
+            self._show_info("\u2764\ufe0f Doacao",
+                            "Apoie o projeto:\n" + GITHUB_URL)
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", "warning")
+
+    def _open_ads_settings(self):
+        """v3.6.1: Preferencias de anuncios."""
+        try:
+            self._show_info("\U0001f4e2 Anuncios",
+                            "Versao gratuita contem anuncios.\n\n"
+                            f"Assine o PREMIUM ({PREMIUM_PRICE_BRL}) "
+                            f"para remove-los.")
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f {e}", "warning")
+    def _on_key_down(self, window, key, scancode, codepoint, modifier):
+        """v3.6.1: PgUp=280, PgDown=281 (SDL2)."""
+        try:
+            if key == 280:  # PgUp
+                self._scroll_current(-8)
+                return True
+            if key == 281:  # PgDn
+                self._scroll_current(8)
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _scroll_current(self, delta):
+        """v3.6.1: Rola o ScrollView da tela atual."""
+        try:
+            cur = self.sm.current_screen
+            for child in cur.walk():
+                if isinstance(child, ScrollView):
+                    child.scroll_y = max(
+                        0.0, min(1.0, child.scroll_y + delta * 0.03))
+                    return
+        except Exception:
+            pass
     def build(self):
         Window.clearcolor = self.kivy_color('bg')
 
@@ -861,6 +1177,40 @@ class DarkPenBootKivyApp(App):
                 font_size=sp(10), size_hint_y=None, height=dp(24),
                 halign='center'))
 
+
+        # ───────────── v3.6.1: rodapé com coração + doação ─────────────
+        try:
+            footer_row = BoxLayout(
+                orientation='horizontal',
+                size_hint_y=None, height=dp(52), spacing=dp(6))
+            # Doação
+            donate = RoundedButton(
+                text="\U0001f496  DOAR VIA PIX",
+                bg_color=self.hex('button'),
+                text_color=self.hex('fg'),
+                size_hint_x=0.5, height=dp(44),
+            )
+            donate.bind(on_release=lambda b: self._open_donate())
+            footer_row.add_widget(donate)
+            # Coração pulsante
+            heart = HeartPulseButton(
+                command=self._toggle_favorite,
+                theme_key_getter=lambda: self.theme_key,
+            )
+            footer_row.add_widget(heart)
+            # Anúncios
+            ads_btn = RoundedButton(
+                text="\U0001f4e2  An\u00fancios",
+                bg_color=self.hex('button'),
+                text_color=self.hex('fg'),
+                size_hint_x=0.5, height=dp(44),
+            )
+            ads_btn.bind(on_release=lambda b: self._open_ads_settings())
+            footer_row.add_widget(ads_btn)
+            root.add_widget(footer_row)
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f Rodap\u00e9: {e}", "warning")
+
         s.add_widget(root)
         return s
 
@@ -923,6 +1273,15 @@ class DarkPenBootKivyApp(App):
         )
         self.btn_download.bind(on_release=self._start_download)
         root.add_widget(self.btn_download)
+        # ── v3.6.1: botao Site Oficial ──
+        btn_site = RoundedButton(
+            text="🌐  Site Oficial",
+            bg_color=self.hex('button'),
+            text_color=self.hex('fg'),
+            size_hint_y=None, height=dp(48),
+        )
+        btn_site.bind(on_release=lambda b: self._open_distro_site())
+        root.add_widget(btn_site)
 
         # Progress bar
         self.download_pb = ProgressBar(
@@ -968,6 +1327,21 @@ class DarkPenBootKivyApp(App):
         self.selected_distro = text
         self.config['last_distro'] = text
         save_config(self.config)
+
+    def _open_distro_site(self):
+        """Abre o site oficial da distro selecionada (v3.6.1)."""
+        try:
+            distro = self.selected_distro
+            info = DISTRO_INFO.get(distro, {})
+            url = info.get("homepage") or info.get("docs")
+            if not url:
+                self._show_info("Sem URL",
+                    f"A distro '{distro}' nao tem site cadastrado.")
+                return
+            webbrowser.open(url)
+            self.log(f"🌐 Site oficial: {url}", "success")
+        except Exception as e:
+            self.log(f"⚠️ Erro ao abrir site: {e}", "warning")
 
     def _start_download(self, *args):
         if self.is_downloading:

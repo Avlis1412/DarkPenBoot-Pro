@@ -4,11 +4,12 @@
 DarkPenBoot Pro - Analise + README + Build + Deploy
 ====================================================
 Uso:
-    python deploy.py              -> analisa + regenera README
+    python deploy.py              -> limpa + analisa + regenera README
     python deploy.py --build      -> + compila .exe
     python deploy.py --push       -> + commit + push
     python deploy.py --all        -> tudo
     python deploy.py --dry-run    -> simula (nao escreve nada)
+    python deploy.py --no-clean   -> pula a fase de limpeza
 """
 import sys, os, re, ast, shutil, subprocess, datetime
 from pathlib import Path
@@ -22,9 +23,10 @@ BRANCH = "main"
 REMOTE = "origin"
 MAIN_SCRIPT = "DarkPenBoot_PRO1.py"
 
-DO_BUILD = ("--build" in sys.argv) or ("--all" in sys.argv)
-DO_PUSH  = ("--push"  in sys.argv) or ("--all" in sys.argv)
-DRY_RUN  = "--dry-run" in sys.argv
+DO_BUILD  = ("--build" in sys.argv) or ("--all" in sys.argv)
+DO_PUSH   = ("--push"  in sys.argv) or ("--all" in sys.argv)
+DRY_RUN   = "--dry-run" in sys.argv
+NO_CLEAN  = "--no-clean" in sys.argv
 
 # ---------------- HELPERS ----------------
 def info(m): print("[INFO] " + m)
@@ -80,6 +82,78 @@ def should_skip_dir(name):
         if name.endswith(s):
             return True
     return False
+
+# ---------------- 0. LIMPEZA ----------------
+TEMP_FILES = {
+    "diag.py", "diag2.py",
+    "fix_final.py", "fix_final_v361.py", "fix_tk_methods.py",
+    "fix_rodape.py", "fix_pgup.py", "fix_p4_p7.py",
+    "fix_remaining.ps1", "fix_remaining.py",
+    "kivy_patcher_v361.py", "patcher_v360.py", "patcher_v361c.py",
+    "update_docs_v361.py", "patcher_consolidado_v361.py",
+    "project_tree.txt", "para_apagar.txt",
+    ".launcher_config.json", ".launcher_log.txt",
+}
+
+def cleanup_backups(root):
+    """Remove todos os *.bak_*, *.bak e *_BACKUP_*.py do projeto (recursivo)."""
+    removed = []
+    patterns = ("*.bak_*", "*.bak", "*_BACKUP_*.py")
+    for pat in patterns:
+        for f in root.rglob(pat):
+            if not f.is_file():
+                continue
+            # nao apaga dentro de venv/.git
+            parts = set(f.parts)
+            if parts & {".git", "kivy_venv", "venv", ".venv"}:
+                continue
+            if DRY_RUN:
+                removed.append(str(f.relative_to(root)))
+                continue
+            try:
+                f.unlink()
+                removed.append(str(f.relative_to(root)))
+            except OSError:
+                pass
+    return removed
+
+def cleanup_tempfiles(root):
+    """Remove scripts temporarios conhecidos."""
+    removed = []
+    for name in TEMP_FILES:
+        f = root / name
+        if f.exists() and f.is_file():
+            if DRY_RUN:
+                removed.append(name)
+                continue
+            try:
+                f.unlink()
+                removed.append(name)
+            except OSError:
+                pass
+    return removed
+
+def fix_bom(root):
+    """Remove BOM (U+FEFF) do inicio de arquivos .py."""
+    fixed = []
+    for p in root.rglob("*.py"):
+        parts = set(p.parts)
+        if parts & {".git", "kivy_venv", "venv", ".venv", "__pycache__"}:
+            continue
+        try:
+            raw = p.read_bytes()
+        except OSError:
+            continue
+        if raw.startswith(b"\xef\xbb\xbf"):
+            if DRY_RUN:
+                fixed.append(str(p.relative_to(root)))
+                continue
+            try:
+                p.write_bytes(raw[3:])
+                fixed.append(str(p.relative_to(root)))
+            except OSError:
+                pass
+    return fixed
 
 # ---------------- 1. ANALISE ----------------
 def analyze_tree(root):
@@ -383,25 +457,33 @@ def git_deploy(root, do_build):
         warn(".git nao encontrado - pulando")
         return
 
+    # 1. Adiciona modificados/deletados JA rastreados
+    run(["git", "add", "-u"])
+
+    # 2. Adiciona novos arquivos
     files = ["README.md", "deploy.py"]
     for f in ["CHANGELOG.md", "pyproject.toml", "README_BUILD.md"]:
         if (root / f).exists():
             files.append(f)
-    if do_build and (root / "dist").exists():
-        files.append("dist")
-
     for f in files:
         if (root / f).exists():
             run(["git", "add", f])
 
+    # 3. Forca o .exe (ignorado pelo .gitignore)
+    if do_build and (root / "dist").exists():
+        for exe in (root / "dist").glob("*.exe"):
+            info("Force add (ignorado pelo .gitignore): " + exe.name)
+            run(["git", "add", "-f", str(exe)])
+
     msg_lines = [
-        "docs(v" + VERSION + "): analise + README + build",
+        "docs(v" + VERSION + "): limpeza + analise + README + build",
         "",
+        "- limpeza: backups .bak_*, temporarios, BOM corrigido",
         "- README.md: estatisticas reais do projeto",
-        "- deploy.py: pipeline de analise + build + deploy",
+        "- deploy.py: pipeline + limpeza + BOM fix + build",
     ]
     if do_build:
-        msg_lines.append("- dist/: executaveis recompilados")
+        msg_lines.append("- dist/: executavel recompilado")
     msg_lines.append("")
     msg_lines.append("Data: " + DATE)
     msg = "\n".join(msg_lines)
@@ -434,13 +516,46 @@ def main():
     print("  Build:  " + ("sim" if DO_BUILD else "nao"))
     print("  Push:   " + ("sim" if DO_PUSH else "nao"))
     print("  DryRun: " + ("sim" if DRY_RUN else "nao"))
+    print("  Limpar: " + ("nao" if NO_CLEAN else "sim"))
 
     if not (root / MAIN_SCRIPT).exists():
         err(MAIN_SCRIPT + " nao encontrado em " + str(root))
         sys.exit(1)
 
+    # 0. LIMPEZA
+    if NO_CLEAN:
+        head("[0/5] LIMPEZA - Ignorada (--no-clean)")
+    else:
+        head("[0/5] LIMPEZA - Backups, temporarios e BOM")
+
+        baks = cleanup_backups(root)
+        if baks:
+            ok(str(len(baks)) + " backups removidos:")
+            for b in baks[:25]:
+                print("     - " + b)
+            if len(baks) > 25:
+                print("     ... + " + str(len(baks) - 25) + " outros")
+        else:
+            info("Nenhum backup encontrado")
+
+        temps = cleanup_tempfiles(root)
+        if temps:
+            ok(str(len(temps)) + " temporarios removidos:")
+            for t in temps:
+                print("     - " + t)
+        else:
+            info("Nenhum temporario encontrado")
+
+        boms = fix_bom(root)
+        if boms:
+            ok(str(len(boms)) + " BOM (U+FEFF) corrigidos:")
+            for b in boms:
+                print("     - " + b)
+        else:
+            info("Nenhum BOM encontrado")
+
     # 1. ANALISE
-    head("[1/4] ANALISE - Varredura de diretorios e arquivos")
+    head("[1/5] ANALISE - Varredura de diretorios e arquivos")
     stats = analyze_tree(root)
     ok(str(stats["total_files"]) + " arquivos, " + str(stats["total_dirs"]) + " diretorios")
     ok("{:,}".format(stats["total_lines"]) + " linhas, "
@@ -450,11 +565,11 @@ def main():
     print_biggest_files(stats)
 
     # 2. DIAG
-    head("[2/4] DIAG - Verificacao de teor (sintaxe Python)")
+    head("[2/5] DIAG - Verificacao de teor (sintaxe Python)")
     diag_errors = diagnose_python(root, [f[0] for f in stats["files"]])
 
     # 3. README
-    head("[3/4] README - Geracao com estatisticas reais")
+    head("[3/5] README - Geracao com estatisticas reais")
     content = build_readme(stats, diag_errors, root)
     nlines = write_readme(root, content)
     ok("README.md regenerado (" + str(nlines) + " linhas)")
@@ -463,19 +578,20 @@ def main():
     if DO_BUILD:
         build_exe(root)
     else:
-        info("Build ignorado (use --build ou --all)")
+        head("[4/5] BUILD - Ignorado (use --build ou --all)")
 
     # 5. GIT
     if DO_PUSH:
         git_deploy(root, DO_BUILD)
     else:
-        info("Git ignorado (use --push ou --all)")
+        head("[5/5] GIT - Ignorado (use --push ou --all)")
 
     head("OK - Pipeline concluido")
     print("  Proximos passos:")
     print("    python deploy.py --build   # compilar .exe")
     print("    python deploy.py --push    # commit + push")
     print("    python deploy.py --all     # tudo de uma vez")
+    print("    python deploy.py --no-clean # pular limpeza")
     print()
 
 if __name__ == "__main__":

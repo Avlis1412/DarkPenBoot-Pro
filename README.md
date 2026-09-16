@@ -42,17 +42,17 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 
 | Metrica | Valor |
 |---------|-------|
-| Arquivos | 57 |
+| Arquivos | 50 |
 | Diretorios | 20 |
-| Linhas totais | 22,239 |
-| Tamanho total | 0.94 MB |
-| Erros de sintaxe | 5 |
+| Linhas totais | 20,195 |
+| Tamanho total | 0.86 MB |
+| Erros de sintaxe | 0 |
 
 ### Por extensao (top 8 por linhas)
 
 | Ext | Arquivos | Linhas | Tamanho |
 |-----|----------|--------|---------|
-| `.py` | 22 | 16,071 | 686.6 KB |
+| `.py` | 16 | 14,030 | 595.9 KB |
 | `.md` | 17 | 3,980 | 184.8 KB |
 | `.nix` | 3 | 497 | 24.3 KB |
 | `.ps1` | 3 | 420 | 21.7 KB |
@@ -67,14 +67,14 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 |---------|--------|---------|
 | `DarkPenBoot_PRO1.py` | 9,995 | 439.2 KB |
 | `darkpenboot_kivy.py` | 1,984 | 78.6 KB |
-| `patcher_consolidado_v361.py` | 1,231 | 58.5 KB |
 | `DPB_Launcher.py` | 684 | 30.5 KB |
-| `deploy.py` | 482 | 16.9 KB |
-| `kivy_patcher_v361.py` | 453 | 16.2 KB |
+| `deploy.py` | 598 | 20.8 KB |
 | `docs\ARQUITETURA.md` | 447 | 17.4 KB |
 | `docs\NIXOS.md` | 421 | 12.7 KB |
 | `CHANGELOG.md` | 387 | 11.7 KB |
 | `.github\skills\speckit-checklist\SKILL.md` | 383 | 22.1 KB |
+| `.github\skills\speckit-specify\SKILL.md` | 345 | 18.2 KB |
+| `build.sh` | 305 | 12.0 KB |
 
 ---
 
