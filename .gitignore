@@ -77,3 +77,7 @@ __pycache__/
 kivy_venv/
 venv/
 env/
+
+# Arquivo local com credenciais - NUNCA versionar
+setup-continue.ps1
+*.bak_*
