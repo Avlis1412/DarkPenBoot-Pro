@@ -1,0 +1,240 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DARKPENBOOT PRO — pyproject.toml
+# Metadata Python (PEP 621) + configurações de ferramentas
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ INSPIRAÇÃO NIXOS                                                        │
+# │                                                                         │
+# │ Assim como o NixOS declara todas as deps em .nix, o pyproject.toml      │
+# │ declara TUDO o que o projeto Python precisa — deps, versão, licença.    │
+# │                                                                         │
+# │ NixOS® é marca da NixOS Foundation. Sem afiliação.                      │
+# └─────────────────────────────────────────────────────────────────────────┘
+#
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# METADATA DO PROJETO
+# ═══════════════════════════════════════════════════════════════════════════
+[project]
+name = "darkpenboot"
+version = "3.5.0"
+description = "Criador de Pendrives Bootáveis Multi-Plataforma (Windows, Linux, macOS, Android)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Adriano Rodrigues da Silva", email = "avlis1412@github.com" }
+]
+
+maintainers = [
+    { name = "Adriano Rodrigues da Silva", email = "avlis1412@github.com" }
+]
+
+keywords = [
+    "pendrive",
+    "boot",
+    "usb",
+    "iso",
+    "rufus",
+    "nixos",
+    "linux",
+    "windows",
+    "multiplataforma",
+    "bootavel",
+    "flash",
+    "bootloader",
+]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: X11 Applications",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: MacOS X",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: Android",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Natural Language :: Portuguese (Brazilian)",
+    "Natural Language :: English",
+]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDÊNCIAS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# NOTA: O DarkPenBoot Pro é escrito para rodar com a biblioteca padrão do
+# Python + Tkinter (que vem com Python). Não há dependências obrigatórias.
+#
+dependencies = [
+    # Tkinter vem com Python — nenhuma dep obrigatória!
+    # Bibliotecas opcionais são detectadas em runtime.
+]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDÊNCIAS OPCIONAIS
+# ═══════════════════════════════════════════════════════════════════════════
+[project.optional-dependencies]
+
+# Features extras: pip install darkpenboot[full]
+full = [
+    "pillow>=10.0.0",       # Ícones e imagens
+    "requests>=2.31.0",     # HTTP alternativo
+    "pyinstaller>=6.0.0",   # Build de executáveis
+]
+
+# Para desenvolvimento: pip install darkpenboot[dev]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+]
+
+# Para build Android (Kivy): pip install darkpenboot[android]
+android = [
+    "kivy>=2.3.0",
+    "buildozer>=1.5.0",
+    "cython>=3.0.0",
+]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LINKS
+# ═══════════════════════════════════════════════════════════════════════════
+[project.urls]
+Homepage = "https://github.com/Avlis1412/DarkPenBoot-Pro"
+Repository = "https://github.com/Avlis1412/DarkPenBoot-Pro"
+"Bug Tracker" = "https://github.com/Avlis1412/DarkPenBoot-Pro/issues"
+Changelog = "https://github.com/Avlis1412/DarkPenBoot-Pro/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/Avlis1412/DarkPenBoot-Pro/tree/main/docs"
+"NixOS Governance" = "https://nixos.org/governance/"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SCRIPTS (entry points)
+# ═══════════════════════════════════════════════════════════════════════════
+[project.scripts]
+darkpenboot = "DarkPenBoot_PRO1:main"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SETUPTOOLS
+# ═══════════════════════════════════════════════════════════════════════════
+[tool.setuptools]
+# Arquivo principal (single-file)
+py-modules = ["DarkPenBoot_PRO1"]
+
+[tool.setuptools.package-data]
+darkpenboot = ["*.json", "*.txt", "*.md"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FERRAMENTAS DE DESENVOLVIMENTO
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── Black (formatação de código) ───────────────────────────────────────
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+# ─── Ruff (linter) ──────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (deixa black cuidar)
+    "E402",  # import not at top (comum em scripts)
+    "F401",  # imported but unused (comum em __init__)
+    "E722",  # bare except (necessário para cross-platform)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101"]  # permite assert em testes
+
+# ─── MyPy (verificação de tipos) ────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+# ─── Pytest (testes) ────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marca testes lentos (deseleciona com -m 'not slow')",
+    "integration: testes de integração (precisam de rede)",
+    "unit: testes unitários rápidos",
+]
+
+# ─── Coverage (cobertura de código) ─────────────────────────────────────
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if False:",
+]

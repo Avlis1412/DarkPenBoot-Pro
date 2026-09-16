@@ -1,0 +1,106 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DARKPENBOOT PRO — requirements.txt
+# Dependências Python
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# NOTA IMPORTANTE:
+# O DarkPenBoot Pro roda com a BIBLIOTECA PADRÃO do Python.
+# Tkinter (que vem com Python) fornece toda a UI desktop.
+#
+# Portanto: NÃO HÁ dependências obrigatórias.
+#
+# Para instalar TUDO (opcional):
+#   pip install -r requirements.txt
+#
+# ───────────────────────────────────────────────────────────────────────────
+# 🟣 Inspirado em NixOS — dependências declaradas, nada implícito
+# 🟣 NixOS® é marca da NixOS Foundation (sem afiliação)
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🎯 OBRIGATÓRIAS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Nenhuma!
+#
+# Tkinter vem com Python 3.9+ em:
+#   • Windows: instalado por padrão
+#   • macOS:   instalado por padrão
+#   • Linux:   sudo apt install python3-tk
+#   • Termux:  pkg install python-tkinter
+#
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ✨ RECOMENDADAS (para melhor experiência)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Processamento de imagens (ícones, splash screen)
+pillow>=10.0.0
+
+# HTTP alternativo (fallback do downloader)
+requests>=2.31.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🔨 BUILD (necessárias para gerar executáveis)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Empacotamento Python → executável
+pyinstaller>=6.0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 📱 ANDROID (opcional — apenas para gerar APK)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# UI mobile
+kivy>=2.3.0
+
+# Build system Android
+buildozer>=1.5.0
+cython>=3.0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🧪 DESENVOLVIMENTO (opcional — testes e linting)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Testes
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Formatação de código
+black>=23.0.0
+
+# Linter rápido
+ruff>=0.1.0
+
+# Verificação de tipos
+mypy>=1.7.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 📖 NOTAS
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 1. Instalação completa:
+#    pip install -r requirements.txt
+#
+# 2. Apenas obrigatórias (nenhuma):
+#    (nada a fazer)
+#
+# 3. Apenas o essencial para build:
+#    pip install pyinstaller pillow requests
+#
+# 4. Para contribuir com o projeto:
+#    pip install pyinstaller pillow requests pytest black ruff mypy
+#
+# 5. Para build Android:
+#    pip install kivy buildozer cython
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# 🟣 Inspirado em NixOS — nixos.org
+# 🟣 NixOS® é marca da NixOS Foundation (sem afiliação)
+# ═══════════════════════════════════════════════════════════════════════════

@@ -1,47 +1,65 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# DARKPENBOOT PRO — Release Automática
+# DARKPENBOOT PRO — Release Automática (v2)
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# Criado automaticamente quando você faz:
-#   git tag v3.5.0
-#   git push origin v3.5.0
-#
-# Baixa todos os artefatos do build.yml e cria uma Release oficial
-# no GitHub com os binários de Windows, Linux, macOS e Android.
+# Dispara SÓ depois que o workflow "Build Multiplataforma" terminar.
+# Assim os artefatos já estarão prontos para download.
 #
 # 🟣 Inspirado em NixOS — build reprodutível + verificável
-# 🟣 NixOS® é marca da NixOS Foundation (sem afiliação)
 # ═══════════════════════════════════════════════════════════════════════════
 name: Release Automática
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # ⬇️ Dispara quando o build.yml terminar (com sucesso OU falha parcial)
+  workflow_run:
+    workflows: ["Build Multiplataforma"]
+    types: [completed]
+    branches: [main, master]
+
+  # Permite disparo manual
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════════════
-  # Cria a Release com todos os artefatos
-  # ═══════════════════════════════════════════════════════════════════════
   create-release:
     name: 🚀 Criar Release no GitHub
     runs-on: ubuntu-latest
+    # Só roda se o workflow pai foi um push de tag
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
 
     steps:
-      - name: 📥 Checkout do código
+      - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # ─── Baixa artefatos do build.yml (se existirem) ─────────────────
+      - name: 🔍 Detectar tag
+        id: tag
+        run: |
+          # Pega a tag mais recente
+          git fetch --tags
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            echo "❌ Nenhuma tag encontrada"
+            exit 1
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🔍 Tag detectada: $TAG"
+
       - name: 📥 Baixar Windows
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: DarkPenBoot-Windows
           path: artifacts/windows/
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📥 Baixar Linux
         uses: actions/download-artifact@v4
@@ -49,6 +67,8 @@ jobs:
         with:
           name: DarkPenBoot-Linux
           path: artifacts/linux/
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📥 Baixar macOS
         uses: actions/download-artifact@v4
@@ -56,6 +76,8 @@ jobs:
         with:
           name: DarkPenBoot-macOS
           path: artifacts/macos/
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📥 Baixar Android
         uses: actions/download-artifact@v4
@@ -63,41 +85,37 @@ jobs:
         with:
           name: DarkPenBoot-Android
           path: artifacts/android/
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📋 Listar arquivos baixados
+      - name: 📋 Listar arquivos
         run: |
           echo "═══════════════════════════════════════════════"
-          echo "  Arquivos disponíveis para a Release"
+          echo "  Arquivos prontos para Release"
           echo "═══════════════════════════════════════════════"
-          find artifacts -type f -exec ls -lh {} \; 2>/dev/null || true
+          find artifacts -type f -exec ls -lh {} \; 2>/dev/null || echo "(vazio)"
 
-      # ─── Cria a Release ─────────────────────────────────────────────
       - name: 🚀 Criar Release no GitHub
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          name: "DarkPenBoot Pro ${{ github.ref_name }}"
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "DarkPenBoot Pro ${{ steps.tag.outputs.tag }}"
           draft: false
           prerelease: false
           generate_release_notes: true
           body: |
-            # 🚀 DarkPenBoot Pro ${{ github.ref_name }}
+            # 🚀 DarkPenBoot Pro ${{ steps.tag.outputs.tag }}
 
             ## 📦 Downloads
 
-            | Plataforma | Arquivo | Como usar |
-            |-----------|---------|-----------|
-            | 🪟 Windows | `DarkPenBoot.exe` | Baixe e execute |
-            | 🐧 Linux | `darkpenboot` | `chmod +x darkpenboot && ./darkpenboot` |
-            | 🍏 macOS | `DarkPenBoot` | `chmod +x DarkPenBoot && ./DarkPenBoot` |
-            | 📱 Android | `darkpenboot-*.apk` | Baixe e instale no celular |
+            | Plataforma | Arquivo |
+            |-----------|---------|
+            | 🪟 Windows | `DarkPenBoot.exe` |
+            | 🐧 Linux | `darkpenboot` |
+            | 🍏 macOS | `DarkPenBoot` |
+            | 📱 Android | `darkpenboot-*.apk` (em breve) |
 
-            ## 🔐 Verificação SHA256
-
-            Cada artefato vem com um arquivo `.sha256` para verificação.
-
-            ### Linux / macOS
+            ## 🔐 Verificar SHA256
 
             ```bash
             sha256sum -c darkpenboot.sha256
-            # ou
-            shasum -a 256 -c DarkPenBoot.sha256

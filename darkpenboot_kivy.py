@@ -854,6 +854,12 @@ class DarkPenBootKivyApp(App):
             height=dp(24),
         )
         root.add_widget(footer)
+        if os.environ.get("DARKPENBOOT_MOBILE_ADS", "1") == "1":
+            root.add_widget(Label(
+                text="Publicidade mobile",
+                color=self.kivy_color('info'),
+                font_size=sp(10), size_hint_y=None, height=dp(24),
+                halign='center'))
 
         s.add_widget(root)
         return s

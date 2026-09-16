@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pyright: reportRedeclaration=false
 r"""
 ╔══════════════════════════════════════════════════════════════════════════╗
-║       DARKPENBOOT PRO v3.4.0 - CRIADOR DE PENDRIVES BOOTÁVEIS            ║
+║       DARKPENBOOT PRO v3.5.0 - CRIADOR DE PENDRIVES BOOTÁVEIS            ║
 ║                                                                          ║
 ║  Autor: Adriano Rodrigues da Silva                                       ║
 ║  GitHub: https://github.com/Avlis1412                                    ║
@@ -91,11 +92,29 @@ GLOBAL_PULSE_STATE = {
 }
 _PULSE_SUBSCRIBERS: list = []
 
+REACTIVE_PULSE_STATE = {
+    'active': False,
+    'intensity': 0,
+    'until_ts': 0.0,
+    'phase': 0,
+}
+
+def _trigger_reactive_pulse(intensity: int = 2, duration_ms: int = 1200):
+    try:
+        intensity = max(0, min(3, int(intensity)))
+    except Exception:
+        intensity = 2
+    REACTIVE_PULSE_STATE['active'] = True
+    REACTIVE_PULSE_STATE['intensity'] = intensity
+    REACTIVE_PULSE_STATE['until_ts'] = (
+        time.time() * 1000 + max(200, int(duration_ms)))
+    REACTIVE_PULSE_STATE['phase'] = 0
+
 # ==================================================================
 # 2. CONSTANTES
 # ==================================================================
 APP_NAME = "DarkPenBoot Pro"
-APP_VERSION = "3.4.0"
+APP_VERSION = "3.5.0"
 APP_AUTHOR = "Adriano Rodrigues da Silva"
 GITHUB_URL = "https://github.com/Avlis1412"
 
@@ -138,7 +157,7 @@ NIXOS_TRADEMARK_NOTICE = (
     "• Documentação: CC BY-SA 4.0"
 )
 
-AD_MODE = os.environ.get("DARKPENBOOT_AD_MODE", "free_ads").strip().lower()
+AD_MODE = ("mobile_ads" if IS_MOBILE else "desktop_no_ads")
 AD_BANNER_TEXT = (
     f"📢  v3.4.0 — Soft Dark + NixOS Governance + SHA256  •  "
     f"PREMIUM {PREMIUM_PRICE_BRL} sem anúncios  •  github.com/Avlis1412  📢"
@@ -331,6 +350,43 @@ THEMES = {
     },
 }
 
+def _theme_rgb(value: str):
+    value = value.lstrip('#')
+    return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+
+def _theme_hex(rgb) -> str:
+    return '#%02x%02x%02x' % tuple(
+        max(0, min(255, int(channel))) for channel in rgb)
+
+def _soften_theme_colors(theme_dict: dict) -> dict:
+    out = dict(theme_dict)
+    for key in ('accent', 'accent2', 'info', 'fg', 'entry_fg',
+                'button_active', 'button_fg'):
+        value = out.get(key)
+        if not isinstance(value, str) or not value.startswith('#'):
+            continue
+        r, g, b = _theme_rgb(value)
+        gray = 0.299 * r + 0.587 * g + 0.114 * b
+        bg = out.get('frame_bg') or out.get('bg') or '#000000'
+        br, bgc, bb = _theme_rgb(bg)
+        softened = tuple(
+            (channel * 0.82 + gray * 0.18) * 0.94 + base * 0.06
+            for channel, base in zip((r, g, b), (br, bgc, bb)))
+        out[key] = _theme_hex(softened)
+    for key in ('error', 'warning', 'success'):
+        value = out.get(key)
+        if isinstance(value, str) and value.startswith('#'):
+            r, g, b = _theme_rgb(value)
+            gray = 0.299 * r + 0.587 * g + 0.114 * b
+            out[key] = _theme_hex((r * 0.88 + gray * 0.12,
+                                   g * 0.88 + gray * 0.12,
+                                   b * 0.88 + gray * 0.12))
+    return out
+
+THEMES_RAW = {key: dict(value) for key, value in THEMES.items()}
+for _theme_key in list(THEMES):
+    THEMES[_theme_key] = _soften_theme_colors(THEMES[_theme_key])
+
 THEME_KEYS = list(THEMES.keys())
 THEME_LABELS = [THEMES[k]["label"] for k in THEME_KEYS]
 LABEL_TO_KEY = {THEMES[k]["label"]: k for k in THEME_KEYS}
@@ -365,7 +421,7 @@ DISTRO_INFO = {
     },
     # ─── KALI LINUX ───
     "Kali Linux 2024.1": {
-        "url": "https://cdimage.kali.org/kali-2024.1/kali-linux-2024.1-installer-amd64.iso",
+        "url": "https://old.kali.org/kali-images/kali-2024.1/kali-linux-2024.1-installer-amd64.iso",
         "docs": "https://www.kali.org/get-kali/",
         "license": "GPL-3.0 (Debian derivative)",
         "sha256": "",
@@ -374,7 +430,7 @@ DISTRO_INFO = {
     },
     # ─── UBUNTU ───
     "Ubuntu 24.04 LTS": {
-        "url": "https://releases.ubuntu.com/24.04/ubuntu-24.04-desktop-amd64.iso",
+        "url": "https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-desktop-amd64.iso",
         "docs": "https://ubuntu.com/download/desktop",
         "license": "GPL-3.0",
         "sha256": "",
@@ -382,7 +438,7 @@ DISTRO_INFO = {
         "foundation": "Canonical Ltd.",
     },
     "Ubuntu Server 24.04 LTS": {
-        "url": "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso",
+        "url": "https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso",
         "docs": "https://ubuntu.com/download/server",
         "license": "GPL-3.0",
         "sha256": "",
@@ -409,7 +465,7 @@ DISTRO_INFO = {
     },
     # ─── LINUX MINT ───
     "Linux Mint 21.3": {
-        "url": "https://mirrors.kernel.org/linuxmint/stable/21.3/linuxmint-21.3-cinnamon-64bit.iso",
+        "url": "https://mirror.rackspace.com/linuxmint/iso/stable/21.3/linuxmint-21.3-cinnamon-64bit.iso",
         "docs": "https://linuxmint.com/download.php",
         "license": "GPL-3.0",
         "sha256": "",
@@ -418,7 +474,7 @@ DISTRO_INFO = {
     },
     # ─── POP!_OS ───
     "Pop!_OS 22.04 LTS": {
-        "url": "https://iso.pop-os.org/22.04/amd64/intel/20/pop-os_22.04_amd64_intel_20.iso",
+        "url": "https://iso.pop-os.org/22.04/amd64/intel/58/pop-os_22.04_amd64_intel_58.iso",
         "docs": "https://pop.system76.com/",
         "license": "GPL-3.0",
         "sha256": "",
@@ -436,7 +492,7 @@ DISTRO_INFO = {
     },
     # ─── openSUSE ───
     "openSUSE Leap 15.5": {
-        "url": "https://download.opensuse.org/distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64.iso",
+        "url": "https://download.opensuse.org/distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Media.iso",
         "docs": "https://get.opensuse.org/leap/",
         "license": "GPL-2.0 / GPL-3.0",
         "sha256": "",
@@ -445,7 +501,7 @@ DISTRO_INFO = {
     },
     # ─── ARCH LINUX ───
     "Arch Linux 2024.03.01": {
-        "url": "https://mirror.rackspace.com/archlinux/iso/2024.03.01/archlinux-2024.03.01-x86_64.iso",
+        "url": "https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso",
         "docs": "https://archlinux.org/download/",
         "license": "GPL-2.0 e similares",
         "sha256": "",
@@ -464,6 +520,7 @@ DISTRO_INFO = {
     # ─── PROXMOX ───
     "Proxmox VE 8.1": {
         "url": "https://www.proxmox.com/en/downloads/proxmox-virtual-environment",
+        "download_direct": False,
         "docs": "https://pve.proxmox.com/wiki/Main_Page",
         "license": "AGPL-3.0",
         "sha256": "",
@@ -472,7 +529,8 @@ DISTRO_INFO = {
     },
     # ─── TRUENAS ───
     "TrueNAS SCALE": {
-        "url": "https://www.truenas.com/download-truenas-scale/",
+        "url": "https://download.truenas.com/TrueNAS-SCALE-ElectricEel/24.10.0.2/TrueNAS-SCALE-24.10.0.2.iso",
+        "download_direct": True,
         "docs": "https://www.truenas.com/docs/",
         "license": "BSD-2-Clause",
         "sha256": "",
@@ -634,7 +692,10 @@ def _get_free_space(path: str) -> int:
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(
                 p, ctypes.byref(free), ctypes.byref(total), None)
             return free.value
-        st = os.statvfs(path)
+        statvfs = getattr(os, 'statvfs', None)
+        if statvfs is None:
+            return -1
+        st = statvfs(path)
         return st.f_bavail * st.f_frsize
     except Exception:
         return -1
@@ -649,13 +710,13 @@ def _format_eta(seconds: float) -> str:
         return f"{s // 60}m {s % 60}s"
     return f"{s}s"
 
-def _format_bytes(n: int) -> str:
+def _format_bytes(n: float) -> str:
     if n <= 0:
         return "0 B"
     for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
         if n < 1024:
             return f"{n:.1f} {unit}"
-        n /= 1024
+        n /= 1024.0
     return f"{n:.1f} PB"
 
 def _parse_size(size_str: str) -> int:
@@ -790,7 +851,9 @@ def _launch_terminal(cmd_text=None, shell='default'):
         pass
     return False
 
-def _detect_usb_tier(drive_info: Dict) -> str:
+def _detect_usb_tier(drive_info: Optional[Dict] = None) -> str:
+    if not drive_info:
+        return 'UNKNOWN'
     try:
         pnp = (drive_info.get('PNPDeviceID') or '').upper()
         model = (drive_info.get('Model') or '').upper()
@@ -941,10 +1004,10 @@ def is_admin() -> bool:
             return ctypes.windll.shell32.IsUserAnAdmin() != 0
         except Exception:
             return False
-    try:
-        return os.geteuid() == 0
-    except AttributeError:
+    geteuid = getattr(os, 'geteuid', None)
+    if geteuid is None:
         return False
+    return geteuid() == 0
 
 def run_as_admin():
     if IS_WINDOWS:
@@ -1067,6 +1130,20 @@ def _force_assign_letter_to_iso(iso_path: str, log_func=None) -> Optional[str]:
 # ==================================================================
 # 7. CONFIG
 # ==================================================================
+DEFAULT_CONFIG = {
+    'last_iso': '', 'filesystem': 'NTFS', 'quick_format': True,
+    'scheme': 'MBR', 'verify': False, 'mode': 'extract',
+    'theme': 'soft_dark', 'debug': False,
+    'window_geometry': '', 'last_operation': '',
+    'last_drive_letter': '', 'window_maximized': False,
+    'hash_algo': 'SHA256', 'log_level': 'Detalhado',
+    'buffer_override': 'Auto (por tier USB)', 'chunk_override': 'Auto',
+    'reopen_attempts': '5', 'align_override': 'Auto (1024 KB)',
+    'cluster_override': 'Auto', 'force_fsync': True,
+    'leave_raw_dd': False, 'ad_mode': AD_MODE, 'license_key': '',
+    'premium_unlocked': False,
+}
+
 def load_config() -> Dict:
     default = {
         'last_iso': '', 'filesystem': 'NTFS', 'quick_format': True,
@@ -2602,7 +2679,7 @@ def verify_copy_completeness(src_dir: str, dst_dir: str, log_func) -> bool:
     return True
 
 def inject_boot_sector(drive_letter, mounted_iso, log_func,
-                       iso_path: str = None) -> bool:
+                       iso_path: Optional[str] = None) -> bool:
     if not IS_WINDOWS:
         return True
     bootsect = os.path.join(mounted_iso, "boot", "bootsect.exe")
@@ -3080,15 +3157,19 @@ def _open_raw_device(device_path: str):
                 msg = ""
             raise OSError(err, f"CreateFileW falhou para {device_path} "
                                f"(código {err}: {msg})")
-        fd = msvcrt.open_osfhandle(ctypes.c_void_p(handle).value,
+        handle_value = ctypes.c_void_p(handle).value
+        if handle_value is None:
+            raise OSError("handle nulo retornado por CreateFileW")
+        fd = msvcrt.open_osfhandle(int(handle_value),
                                     os.O_RDWR | os.O_BINARY)
         if fd < 0:
             raise OSError(f"open_osfhandle retornou fd inválido: {fd}")
         return os.fdopen(fd, "r+b", buffering=0)
     if IS_LINUX or IS_ANDROID or IS_TERMUX:
-        if hasattr(os, 'O_DIRECT'):
+        direct_flag = getattr(os, 'O_DIRECT', 0)
+        if direct_flag:
             try:
-                fd = os.open(device_path, os.O_RDWR | os.O_DIRECT)
+                fd = os.open(device_path, os.O_RDWR | direct_flag)
                 return os.fdopen(fd, "r+b", buffering=0)
             except OSError:
                 pass
@@ -3436,6 +3517,12 @@ def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
     elif "Kali" in distro_key:
         urls.append(primary_url.replace("cdimage.kali.org",
                                          "mirror.ufscar.br/kali"))
+    elif "Mint" in distro_key:
+        urls.append(primary_url.replace("mirror.rackspace.com",
+                                       "mirrors.kernel.org"))
+    elif "Arch" in distro_key:
+        urls.append("https://geo.mirror.pkgbuild.com/iso/latest/"
+                    "archlinux-x86_64.iso")
     seen = set()
     out = []
     for u in urls:
@@ -3482,13 +3569,15 @@ def download_with_curl(url, destino, progress_cb, cancel_flag,
         return False
     total = get_remote_size(url)
     cmd = [
-        'curl', '-L', '--retry', '3', '--retry-delay', '3',
+        'curl', '-L', '--fail', '--show-error', '--retry', '3',
+        '--retry-delay', '3',
         '--max-redirs', '10', '--connect-timeout', '30',
         '-A', BROWSER_UA, '-o', destino, url
     ]
     if os.path.exists(destino) and os.path.getsize(destino) > 0:
         cmd = [
-            'curl', '-L', '-C', '-', '--retry', '3', '--retry-delay', '3',
+            'curl', '-L', '--fail', '--show-error', '-C', '-', '--retry', '3',
+            '--retry-delay', '3',
             '--max-redirs', '10', '--connect-timeout', '30',
             '-A', BROWSER_UA, '-o', destino, url
         ]
@@ -3542,7 +3631,7 @@ def download_with_curl(url, destino, progress_cb, cancel_flag,
     if not ok and log_func:
         err_out = b""
         try:
-            err_out = proc.stderr.read() or b""
+            err_out = (proc.stderr.read() if proc.stderr else b"") or b""
         except Exception:
             pass
         _log_download_error(log_func, "curl",
@@ -3625,7 +3714,7 @@ def download_with_wget(url, destino, progress_cb, cancel_flag,
     if not ok and log_func:
         err_out = b""
         try:
-            err_out = proc.stderr.read() or b""
+            err_out = (proc.stderr.read() if proc.stderr else b"") or b""
         except Exception:
             pass
         _log_download_error(log_func, "wget",
@@ -3664,8 +3753,11 @@ def download_with_urllib(url, destino, progress_cb, cancel_flag,
         else:
             resp_obj = urllib.request.urlopen(req, timeout=30)
         with resp_obj as resp:
-            content_length = resp.headers.get('Content-Length')
             status = getattr(resp, 'status', 200)
+            if status < 200 or status >= 300:
+                raise urllib.error.HTTPError(
+                    url, status, f"HTTP {status}", resp.headers, None)
+            content_length = resp.headers.get('Content-Length')
             if content_length:
                 cl = int(content_length)
                 if status == 206:
@@ -3739,59 +3831,58 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
         methods.append(('wget', download_with_wget))
     methods.append(('urllib', download_with_urllib))
     last_error = None
-    for name, fn in methods:
+    distro_key = next((key for key, info in DISTRO_INFO.items()
+                       if info.get("url") == url), "")
+    urls = _get_download_mirrors(distro_key, url) if distro_key else [url]
+    for attempt_url in urls:
         if cancel_flag():
             return False
-        if log_func:
-            log_func(f"🔧 Tentando via {name}...", is_info=True)
-        try:
-            try:
-                ok = fn(url, destino, progress_cb, cancel_flag, log_func)
-            except TypeError:
-                ok = fn(url, destino, progress_cb, cancel_flag)
+        if attempt_url != url and log_func:
+            log_func(f"🌐 Tentando mirror: {attempt_url}", is_info=True)
+        for name, fn in methods:
             if cancel_flag():
                 return False
-            if ok:
+            if log_func:
+                log_func(f"🔧 Tentando via {name}...", is_info=True)
+            try:
                 try:
-                    size = os.path.getsize(destino)
-                    if size < MIN_ISO_SIZE:
-                        head, info = _inspect_file_bytes(destino, 32)
-                        if log_func:
-                            log_func(f"❌ Download inválido: "
-                                     f"{_format_bytes(size)}.", is_error=True)
-                            log_func(info, is_error=True)
-                        try:
-                            os.remove(destino)
-                        except Exception:
-                            pass
-                        last_error = f"{name}: arquivo muito pequeno"
-                        continue
-                except Exception:
-                    pass
-                distro_key = None
-                for k, v in DISTRO_INFO.items():
-                    if v.get("url") == url:
-                        distro_key = k
-                        break
-                if distro_key is None:
-                    base_noext = os.path.splitext(
-                        os.path.basename(destino))[0]
-                    for k in DISTRO_INFO.keys():
-                        if k.replace(" ", "_").replace("/", "_") == base_noext:
-                            distro_key = k
-                            break
+                    ok = fn(attempt_url, destino, progress_cb,
+                            cancel_flag, log_func)
+                except TypeError:
+                    ok = fn(attempt_url, destino, progress_cb, cancel_flag)
+                if cancel_flag():
+                    return False
+                if not ok:
+                    last_error = f"{name} falhou"
+                    continue
+
+                size = os.path.getsize(destino)
+                head, info = _inspect_file_bytes(destino, 512)
+                head_lower = head.lstrip().lower()
+                if head_lower.startswith((b"<!doctype", b"<html",
+                                          b"<?xml", b"<head")):
+                    if log_func:
+                        log_func(f"❌ Download inválido: {info}",
+                                 is_error=True)
+                    os.remove(destino)
+                    last_error = f"{name}: resposta HTML/XML"
+                    continue
+                if size < MIN_ISO_SIZE:
+                    if log_func:
+                        log_func(f"❌ Download inválido: {_format_bytes(size)}.",
+                                 is_error=True)
+                        log_func(info, is_error=True)
+                    os.remove(destino)
+                    last_error = f"{name}: arquivo muito pequeno"
+                    continue
+
                 if distro_key:
                     ok_hash, hash_msg = verify_download_sha256(
                         destino, distro_key, log_func,
-                        progress_cb=progress_cb,
-                        cancel_flag=cancel_flag)
+                        progress_cb=progress_cb, cancel_flag=cancel_flag)
                     if not ok_hash:
-                        if log_func:
-                            log_func(f"⚠️ Download rejeitado: {hash_msg}. "
-                                     f"Arquivo mantido como .parcial",
-                                     is_warning=True)
+                        parcial = destino + ".parcial"
                         try:
-                            parcial = destino + ".parcial"
                             os.rename(destino, parcial)
                         except Exception:
                             pass
@@ -3801,15 +3892,11 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
                     log_func(f"✅ Download concluído via {name}.",
                              is_success=True)
                 return True
-            last_error = f"{name} falhou"
-            if log_func:
-                log_func(f"⚠️ {name} não conseguiu concluir; "
-                         f"tentando próximo método...", is_warning=True)
-        except Exception as e:
-            last_error = f"{name}: {e}"
-            if log_func:
-                log_func(f"⚠️ {name} erro: {e}", is_warning=True)
-            continue
+            except Exception as e:
+                last_error = f"{name}: {e}"
+                if log_func:
+                    log_func(f"⚠️ {name} erro: {e}", is_warning=True)
+                continue
     if log_func:
         log_func(f"❌ Todos os métodos falharam. Último erro: {last_error or '?'}",
                  is_error=True)
@@ -3854,8 +3941,9 @@ class ToolTip:
         try:
             if not self.widget.winfo_exists():
                 return
-            text = (self.text_getter() if callable(self.text_getter)
+                raw_text = (self.text_getter() if callable(self.text_getter)
                     else self.text_getter)
+                text = str(raw_text) if raw_text is not None else ""
         except Exception:
             text = None
         if not text:
@@ -4068,12 +4156,15 @@ class NeonThemeBall(tk.Canvas):
             except Exception:
                 pass
             self._anim_id = None
-        if GLOBAL_PULSE_STATE['active']:
-            interval = 30
-        elif self._writing:
-            interval = 35
+        if not (GLOBAL_PULSE_STATE['active'] or self._writing or
+                REACTIVE_PULSE_STATE['active']):
+            self._draw()
+            return
+        if REACTIVE_PULSE_STATE['active']:
+            interval = {0: 40, 1: 32, 2: 22, 3: 14}.get(
+                REACTIVE_PULSE_STATE['intensity'], 22)
         else:
-            interval = 70
+            interval = 35 if self._writing else 55
         def tick():
             try:
                 self._phase = (self._phase + 1) % 32
@@ -4110,7 +4201,18 @@ class NeonThemeBall(tk.Canvas):
         cx = cy = s / 2.0
         r_base = s / 2.0 - 7.0
         global_on = GLOBAL_PULSE_STATE['active']
-        gp = GLOBAL_PULSE_STATE['phase'] if global_on else self._phase
+        reactive_on = REACTIVE_PULSE_STATE['active']
+        if (reactive_on and time.time() * 1000 >
+                REACTIVE_PULSE_STATE['until_ts']):
+            REACTIVE_PULSE_STATE['active'] = False
+            REACTIVE_PULSE_STATE['intensity'] = 0
+            reactive_on = False
+        if reactive_on:
+            gp = REACTIVE_PULSE_STATE['phase']
+        elif global_on:
+            gp = GLOBAL_PULSE_STATE['phase']
+        else:
+            gp = self._phase
         try:
             acc_rgb = self._hex_to_rgb(COLORS.get('accent', '#00ff41'))
             acc2_rgb = self._hex_to_rgb(COLORS.get('accent2', '#00ccff'))
@@ -4139,7 +4241,13 @@ class NeonThemeBall(tk.Canvas):
                                  width=max(1, 2 - i // 3))
             except Exception:
                 pass
-        amp_ext = 220 if (global_on or self._writing) else 140
+        if reactive_on:
+            amp_ext = {0: 180, 1: 240, 2: 300, 3: 380}.get(
+                REACTIVE_PULSE_STATE['intensity'], 240)
+        elif global_on or self._writing:
+            amp_ext = 220
+        else:
+            amp_ext = 140
         halo = self._pulse(COLORS.get('accent', '#00ff41'), gp, amp_ext)
         for r_off, w_ in ((3.0, 3), (1.5, 2)):
             self.create_oval(cx - r_base - r_off, cy - r_base - r_off,
@@ -4497,7 +4605,9 @@ class RoundedButton(tk.Canvas):
                 pass
         return "break"
 
-    def config(self, **kwargs):
+    def set_state(self, **kwargs):
+        """Configura o botão. Substitui config() do Tkinter para
+        evitar incompatibilidade de assinatura."""
         if 'state' in kwargs:
             st = kwargs.pop('state')
             self._enabled = (st != "disabled" and st != tk.DISABLED)
@@ -4507,14 +4617,14 @@ class RoundedButton(tk.Canvas):
             self._bg_norm = kwargs.pop('bg')
         if 'fg' in kwargs:
             self._fg = kwargs.pop('fg')
+        if 'command' in kwargs:
+            self._command = kwargs.pop('command')
         if kwargs:
             try:
                 super().config(**kwargs)
             except Exception:
                 pass
         self._redraw()
-
-    configure = config
 
     def destroy(self):
         try:
@@ -4833,7 +4943,7 @@ class MonetizationManager:
         self.is_pro = is_pro_version
 
     def should_show_ads(self) -> bool:
-        return not self.is_pro
+        return IS_MOBILE and not self.is_pro
 
     def trigger_interstitial_ad(self, log_func=None):
         if self.should_show_ads():
@@ -4950,7 +5060,10 @@ class ClickableLogo(tk.Frame):
     def _start_anim(self):
         if self._anim_id is not None:
             return
-        interval = 55 if GLOBAL_PULSE_STATE['active'] else 90
+        if not GLOBAL_PULSE_STATE['active']:
+            self._update_colors()
+            return
+        interval = 70
         def tick():
             try:
                 self._phase = (self._phase + 1) % 16
@@ -5015,2300 +5128,6 @@ class ClickableLogo(tk.Frame):
         super().destroy()
         
 # ==================================================================
-# 13. ESCRITA DD
-# ==================================================================
-def _get_disk_number_from_device(device_path: str) -> Optional[int]:
-    m = re.search(r'PhysicalDrive(\d+)', str(device_path), re.IGNORECASE)
-    return int(m.group(1)) if m else None
-
-def _rescan_devices(log_func=None, target_device: Optional[str] = None) -> None:
-    try:
-        if IS_WINDOWS:
-            script_path = CONFIG_DIR / f"_rescan_{os.getpid()}_{int(time.time() * 1000)}.txt"
-            try:
-                with open(script_path, "w", encoding="ascii", newline="\r\n") as f:
-                    f.write("rescan\nexit\n")
-                run_hidden(["diskpart", "/s", str(script_path)], timeout=60)
-            finally:
-                try:
-                    script_path.unlink(missing_ok=True)
-                except Exception:
-                    pass
-            run_hidden(
-                ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                 '-Command',
-                 "Update-HostStorageCache; Start-Sleep -Milliseconds 300"],
-                timeout=30)
-            if log_func:
-                log_func("🔄 Rescan Windows concluído.", is_info=True)
-        elif IS_LINUX or IS_ANDROID or IS_TERMUX:
-            run_hidden(["udevadm", "trigger", "--subsystem-match=block"], timeout=30)
-            run_hidden(["udevadm", "settle", "--timeout=5"], timeout=15)
-            if target_device and os.path.exists(target_device):
-                run_hidden(["blockdev", "--rereadpt", target_device], timeout=15)
-            run_hidden(["partprobe"], timeout=15)
-        elif IS_MAC:
-            run_hidden(["diskutil", "list"], timeout=15)
-    except Exception as e:
-        if log_func:
-            log_func(f"⚠️ Aviso ao rescan: {e}", is_warning=True)
-
-def _prepare_device_for_dd(device_path: str, log_func=None) -> bool:
-    try:
-        if IS_WINDOWS:
-            disk_number = _get_disk_number_from_device(device_path)
-            if disk_number is None:
-                return False
-            if disk_number == 0:
-                if log_func:
-                    log_func("🚨 BLOQUEADO: PhysicalDrive0.", is_error=True)
-                return False
-            ps_script = f'''
-            $ErrorActionPreference = 'SilentlyContinue'
-            try {{
-                $parts = Get-Partition -DiskNumber {disk_number}
-                foreach ($p in $parts) {{
-                    if ($p.DriveLetter) {{
-                        Remove-PartitionAccessPath -DiskNumber {disk_number} `
-                            -PartitionNumber $p.PartitionNumber `
-                            -AccessPath "$($p.DriveLetter):"
-                    }}
-                }}
-                Start-Sleep -Milliseconds 800
-                Update-HostStorageCache
-                Start-Sleep -Milliseconds 300
-                $d = Get-Disk -Number {disk_number}
-                if ($d) {{
-                    if ($d.IsReadOnly) {{ Set-Disk -Number {disk_number} -IsReadOnly $false }}
-                    if (-not $d.IsOffline) {{ Set-Disk -Number {disk_number} -IsOffline $true }}
-                    Start-Sleep -Milliseconds 800
-                    Update-HostStorageCache
-                    Start-Sleep -Milliseconds 500
-                    if ((Get-Disk -Number {disk_number}).IsOffline) {{
-                        Write-Output "OFFLINE_OK"
-                    }} else {{
-                        Write-Output "STILL_ONLINE"
-                    }}
-                }} else {{
-                    Write-Output "SEM_DISK"
-                }}
-            }} catch {{
-                Write-Output "ERRO: $($_.Exception.Message)"
-            }}
-            '''
-            r = run_hidden(
-                ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                 '-Command', ps_script], timeout=90)
-            out = (r.stdout or "").strip()
-            offlined = "OFFLINE_OK" in out
-            if not offlined:
-                script = (f"select disk {disk_number}\n"
-                          "attributes disk clear readonly\n"
-                          "offline disk\n"
-                          "exit\n")
-                script_path = CONFIG_DIR / f"_dd_prepare_{os.getpid()}_{int(time.time() * 1000)}.txt"
-                try:
-                    with open(script_path, "w", encoding="ascii", newline="\r\n") as f:
-                        f.write(script)
-                    result = run_hidden(["diskpart", "/s", str(script_path)],
-                                        timeout=90)
-                    if result.returncode == 0:
-                        offlined = True
-                        time.sleep(0.5)
-                        if log_func:
-                            log_func(f"🔒 Disco {disk_number} offline (diskpart).",
-                                     is_info=True)
-                finally:
-                    try:
-                        script_path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-            if offlined and log_func:
-                log_func(f"🔒 Disco {disk_number} offline para DD.", is_info=True)
-            return True
-        if IS_LINUX or IS_ANDROID or IS_TERMUX:
-            dev = device_path
-            partitions = []
-            lsblk = run_hidden(["lsblk", "-lnpo", "NAME,TYPE", dev], timeout=15)
-            if lsblk.returncode == 0:
-                for line in (lsblk.stdout or "").splitlines():
-                    parts = line.split()
-                    if len(parts) >= 2 and parts[1] in ("part", "lvm"):
-                        partitions.append(parts[0])
-            for part in partitions:
-                r = run_hidden(["umount", part], timeout=30)
-                if r.returncode != 0:
-                    run_hidden(["umount", "-l", part], timeout=30)
-            run_hidden(["umount", dev], timeout=15)
-            run_hidden(["sync"], timeout=30)
-            run_hidden(["blockdev", "--flushbufs", dev], timeout=15)
-            run_hidden(["blockdev", "--rereadpt", dev], timeout=15)
-            return True
-        if IS_MAC:
-            r = run_hidden(["diskutil", "unmountDisk", device_path], timeout=60)
-            if r.returncode != 0:
-                r = run_hidden(["diskutil", "unmountDisk", "force", device_path],
-                               timeout=60)
-            if r.returncode != 0:
-                return False
-            run_hidden(["sync"], timeout=30)
-            return True
-        return False
-    except Exception as e:
-        if log_func:
-            log_func(f"❌ Falha ao preparar dispositivo: {e}", is_error=True)
-        return False
-
-def _keep_disk_offline_raw(disk_number: int, log_func=None):
-    for _ in range(3):
-        script = (f"select disk {disk_number}\n"
-                  "attributes disk clear readonly\n"
-                  "offline disk\n"
-                  "exit\n")
-        script_path = CONFIG_DIR / (
-            f"_raw_{os.getpid()}_{int(time.time() * 1000)}.txt")
-        try:
-            with open(script_path, "w", encoding="ascii",
-                      newline="\r\n") as f:
-                f.write(script)
-            r = run_hidden(["diskpart", "/s", str(script_path)], timeout=60)
-            if r.returncode == 0:
-                break
-        finally:
-            try:
-                script_path.unlink(missing_ok=True)
-            except Exception:
-                pass
-        time.sleep(1)
-    if log_func:
-        log_func("🔒 Disco mantido OFFLINE (formato RAW).", is_info=True)
-        log_func("   💡 Use diskmgmt.msc para ativar manualmente.", is_info=True)
-
-def _bring_online_and_assign(disk_number: int, log_func=None):
-    online_ok = False
-    for attempt in range(4):
-        ps = f'''
-        $ErrorActionPreference = 'SilentlyContinue'
-        try {{
-            Set-Disk -Number {disk_number} -IsOffline $false
-            Set-Disk -Number {disk_number} -IsReadOnly $false
-            Start-Sleep -Milliseconds 500
-            Update-HostStorageCache
-            Start-Sleep -Milliseconds 500
-            $d = Get-Disk -Number {disk_number}
-            if ($d -and -not $d.IsOffline) {{ Write-Output "ONLINE_OK" }}
-            else {{ Write-Output "STILL_OFFLINE" }}
-        }} catch {{ Write-Output "ERRO: $($_.Exception.Message)" }}
-        '''
-        r = run_hidden(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-             '-Command', ps], timeout=60)
-        if "ONLINE_OK" in (r.stdout or ""):
-            online_ok = True
-            break
-        time.sleep(1.5)
-    if not online_ok:
-        script = (f"select disk {disk_number}\n"
-                  "online disk\n"
-                  "attributes disk clear readonly\n"
-                  "exit\n")
-        sp = CONFIG_DIR / f"_online_{os.getpid()}_{int(time.time()*1000)}.txt"
-        try:
-            with open(sp, "w", encoding="ascii", newline="\r\n") as f:
-                f.write(script)
-            r = run_hidden(["diskpart", "/s", str(sp)], timeout=60)
-            if r.returncode == 0:
-                online_ok = True
-        finally:
-            try:
-                sp.unlink(missing_ok=True)
-            except Exception:
-                pass
-    _rescan_devices(log_func)
-    time.sleep(1.5)
-    ps_check = f'''
-    $parts = Get-Partition -DiskNumber {disk_number} -ErrorAction SilentlyContinue
-    $found = $false
-    foreach ($p in $parts) {{
-        if ($p.DriveLetter) {{ Write-Output "HAS_LETTER:$($p.DriveLetter)"; $found = $true }}
-    }}
-    if (-not $found) {{ Write-Output "NO_LETTER" }}
-    '''
-    r = run_hidden(['powershell', '-NoProfile', '-Command', ps_check], timeout=20)
-    out = (r.stdout or "").strip()
-    if "HAS_LETTER:" in out:
-        for line in out.splitlines():
-            if "HAS_LETTER:" in line:
-                letter = line.split(":")[1].strip()
-                if log_func:
-                    log_func(f"✅ Pendrive online com letra {letter}:",
-                             is_success=True)
-                return letter
-    ps_assign = f'''
-    try {{
-        $parts = Get-Partition -DiskNumber {disk_number} -ErrorAction SilentlyContinue
-        if (-not $parts) {{ Write-Output "NO_PARTS"; exit 0 }}
-        foreach ($p in $parts) {{
-            if (-not $p.DriveLetter) {{
-                Add-PartitionAccessPath -DiskNumber {disk_number} `
-                    -PartitionNumber $p.PartitionNumber `
-                    -AssignDriveLetter -ErrorAction SilentlyContinue
-            }}
-        }}
-        Start-Sleep -Seconds 2
-        $parts = Get-Partition -DiskNumber {disk_number} -ErrorAction SilentlyContinue
-        $assigned = $false
-        foreach ($p in $parts) {{
-            if ($p.DriveLetter) {{
-                Write-Output "ASSIGNED:$($p.DriveLetter)"
-                $assigned = $true
-            }}
-        }}
-        if (-not $assigned) {{ Write-Output "NO_LETTER_ASSIGNED" }}
-    }} catch {{ Write-Output "ERRO: $($_.Exception.Message)" }}
-    '''
-    r = run_hidden(['powershell', '-NoProfile', '-Command', ps_assign],
-                   timeout=30)
-    out = (r.stdout or "").strip()
-    for line in out.splitlines():
-        if "ASSIGNED:" in line:
-            letter = line.split(":")[1].strip()
-            if log_func:
-                log_func(f"✅ Letra atribuída automaticamente: {letter}:",
-                         is_success=True)
-            return letter
-    script = (f"select disk {disk_number}\n"
-              "select partition 1\n"
-              "assign\n"
-              "exit\n")
-    sp = CONFIG_DIR / f"_assign_{os.getpid()}_{int(time.time()*1000)}.txt"
-    try:
-        with open(sp, "w", encoding="ascii", newline="\r\n") as f:
-            f.write(script)
-        r = run_hidden(["diskpart", "/s", str(sp)], timeout=60)
-        if r.returncode == 0:
-            time.sleep(1.5)
-            ps_get = (f"(Get-Partition -DiskNumber {disk_number} | "
-                      f"Where-Object DriveLetter | "
-                      f"Select-Object -First 1).DriveLetter")
-            rr = run_hidden(['powershell', '-NoProfile', '-Command', ps_get],
-                            timeout=15)
-            letter = (rr.stdout or "").strip()
-            if letter and letter.isalpha():
-                if log_func:
-                    log_func(f"✅ Letra atribuída via diskpart: {letter}:",
-                             is_success=True)
-                return letter
-    finally:
-        try:
-            sp.unlink(missing_ok=True)
-        except Exception:
-            pass
-    if log_func:
-        log_func("⚠️ Não foi possível atribuir letra automaticamente.",
-                 is_warning=True)
-        log_func("   💡 Abra 'diskmgmt.msc' e atribua uma letra manualmente.",
-                 is_info=True)
-    return None
-
-def _finalize_device_after_dd(device_path: str, log_func=None,
-                              is_windows_iso: bool = False,
-                              leave_raw: bool = False):
-    try:
-        if IS_WINDOWS:
-            disk_number = _get_disk_number_from_device(device_path)
-            if disk_number is None or disk_number == 0:
-                return
-            if leave_raw:
-                _keep_disk_offline_raw(disk_number, log_func)
-                return
-            letter = _bring_online_and_assign(disk_number, log_func)
-            if letter:
-                if is_windows_iso and log_func:
-                    log_func("ℹ️ ISO Windows: pendrive visível, mas o "
-                             "conteúdo pode aparecer como RAW para o "
-                             "Explorer (isso é normal em ISO Windows).",
-                             is_info=True)
-            else:
-                if is_windows_iso and log_func:
-                    log_func("ℹ️ ISO Windows em modo DD: disco pode ficar "
-                             "em RAW. Use diskmgmt.msc se necessário.",
-                             is_info=True)
-        elif IS_LINUX or IS_ANDROID or IS_TERMUX:
-            run_hidden(["sync"], timeout=30)
-            _rescan_devices(log_func, target_device=device_path)
-        elif IS_MAC:
-            run_hidden(["diskutil", "mountDisk", device_path], timeout=60)
-            _rescan_devices(log_func, target_device=device_path)
-    except Exception as e:
-        if log_func:
-            log_func(f"⚠️ Não foi possível restaurar: {e}", is_warning=True)
-
-def _open_raw_device(device_path: str):
-    if IS_WINDOWS:
-        GENERIC_READ = 0x80000000
-        GENERIC_WRITE = 0x40000000
-        FILE_SHARE_READ = 0x00000001
-        FILE_SHARE_WRITE = 0x00000002
-        OPEN_EXISTING = 3
-        FILE_ATTRIBUTE_NORMAL = 0x80
-        FILE_FLAG_WRITE_THROUGH = 0x80000000
-        flags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH
-        kernel32 = ctypes.windll.kernel32
-        CreateFileW = kernel32.CreateFileW
-        CreateFileW.restype = ctypes.c_void_p
-        CreateFileW.argtypes = [
-            ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
-            ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32,
-            ctypes.c_void_p,
-        ]
-        INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
-        handle = CreateFileW(
-            str(device_path), GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE, None, OPEN_EXISTING,
-            flags, None)
-        if handle is None or handle == 0 or handle == INVALID_HANDLE_VALUE:
-            err = ctypes.get_last_error()
-            try:
-                msg = ctypes.FormatError(err).strip()
-            except Exception:
-                msg = ""
-            raise OSError(err, f"CreateFileW falhou para {device_path} "
-                               f"(código {err}: {msg})")
-        fd = msvcrt.open_osfhandle(ctypes.c_void_p(handle).value,
-                                    os.O_RDWR | os.O_BINARY)
-        if fd < 0:
-            raise OSError(f"open_osfhandle retornou fd inválido: {fd}")
-        return os.fdopen(fd, "r+b", buffering=0)
-    if IS_LINUX or IS_ANDROID or IS_TERMUX:
-        if hasattr(os, 'O_DIRECT'):
-            try:
-                fd = os.open(device_path, os.O_RDWR | os.O_DIRECT)
-                return os.fdopen(fd, "r+b", buffering=0)
-            except OSError:
-                pass
-        fd = os.open(device_path, os.O_RDWR)
-        return os.fdopen(fd, "r+b", buffering=0)
-    if IS_MAC:
-        raw = device_path.replace("/dev/disk", "/dev/rdisk")
-        if raw != device_path and os.path.exists(raw):
-            fd = os.open(raw, os.O_RDWR)
-            return os.fdopen(fd, "r+b", buffering=0)
-        fd = os.open(device_path, os.O_RDWR)
-        return os.fdopen(fd, "r+b", buffering=0)
-    return open(device_path, "r+b", buffering=0)
-
-def write_dd_image(iso_path: str, device_path: str,
-                   progress_cb, name_cb, log_func, cancel_flag,
-                   is_windows_iso: bool = False,
-                   buf_size: int = DD_BUFFER_SIZE,
-                   reopen_attempts_max: int = 5,
-                   force_fsync: bool = True,
-                   leave_raw: bool = False) -> bool:
-    if not os.path.isfile(iso_path):
-        log_func(f"❌ Imagem não encontrada: {iso_path}", is_error=True)
-        return False
-    if not device_path:
-        log_func("❌ Dispositivo não definido.", is_error=True)
-        return False
-    total = os.path.getsize(iso_path)
-    if total <= 0:
-        log_func("❌ ISO vazia.", is_error=True)
-        return False
-    name_cb(os.path.basename(iso_path))
-    log_func(f"📝 Gravando {total / (1024**3):.2f} GB via DD...", is_info=True)
-    log_func(f"⚡ Buffer DD: {buf_size // (1024**2)} MB, "
-             f"kill-check: {CANCEL_CHECK_INTERVAL // 1024} KB", is_info=True)
-    if IS_WINDOWS and _get_disk_number_from_device(device_path) == 0:
-        log_func("🚨 BLOQUEADO: disco do sistema.", is_error=True)
-        return False
-    prepared = False
-    device = None
-    success = False
-    reopen_attempts = 0
-
-    def _reopen():
-        nonlocal device
-        try:
-            if device is not None:
-                try:
-                    device.close()
-                except Exception:
-                    pass
-            time.sleep(1.0)
-            _rescan_devices(log_func, target_device=device_path)
-            device = _open_raw_device(device_path)
-            try:
-                device.seek(written)
-            except Exception:
-                pass
-            return True
-        except Exception as e:
-            log_func(f"❌ Falha ao reabrir: {e}", is_error=True)
-            return False
-    try:
-        if not _prepare_device_for_dd(device_path, log_func):
-            return False
-        prepared = True
-        time.sleep(1.0)
-        last_exc = None
-        for attempt in range(5):
-            try:
-                device = _open_raw_device(device_path)
-                break
-            except Exception as exc:
-                last_exc = exc
-                if attempt < 4:
-                    log_func(f"⚠️ Tentando novamente ({attempt + 2}/5)...",
-                             is_warning=True)
-                    time.sleep(1.2)
-        if device is None:
-            raise last_exc or OSError("Não foi possível abrir o dispositivo")
-        start_time = time.time()
-        last_log_time = start_time
-        written = 0
-        read_buffer = bytearray(buf_size)
-        sub_chunk = CANCEL_CHECK_INTERVAL
-        with open(iso_path, "rb", buffering=0) as src:
-            while True:
-                if cancel_flag():
-                    log_func("⚠️ Gravação DD cancelada pelo usuário.",
-                             is_warning=True)
-                    return False
-                n = src.readinto(read_buffer)
-                if not n:
-                    break
-                offset = 0
-                while offset < n:
-                    if cancel_flag():
-                        log_func("⚠️ Gravação DD cancelada pelo usuário.",
-                                 is_warning=True)
-                        return False
-                    end = min(offset + sub_chunk, n)
-                    view = memoryview(read_buffer)[offset:end]
-                    while view:
-                        if cancel_flag():
-                            log_func("⚠️ Gravação DD cancelada pelo usuário.",
-                                     is_warning=True)
-                            return False
-                        try:
-                            w = device.write(view)
-                            if not w:
-                                raise OSError("Escrita retornou zero bytes")
-                            reopen_attempts = 0
-                        except OSError as e:
-                            errno = getattr(e, 'errno', None)
-                            if errno == 9:
-                                reopen_attempts += 1
-                                if reopen_attempts > reopen_attempts_max:
-                                    log_func(
-                                        f"❌ Dispositivo inacessível após "
-                                        f"{reopen_attempts_max} tentativas.",
-                                        is_error=True)
-                                    return False
-                                log_func(f"⚠️ Handle inválido "
-                                         f"({reopen_attempts}/"
-                                         f"{reopen_attempts_max}); reabrindo...",
-                                         is_warning=True)
-                                if not _reopen():
-                                    return False
-                                time.sleep(0.3)
-                                continue
-                            if len(view) > 8192:
-                                half = len(view) // 2
-                                half -= half % 4096
-                                if half <= 0:
-                                    half = len(view)
-                                try:
-                                    w = device.write(view[:half])
-                                    if not w:
-                                        raise OSError("Escrita parcial zero")
-                                except OSError:
-                                    raise
-                            else:
-                                raise
-                        view = view[w:]
-                        written += w
-                    offset = end
-                pct = min(100, int(written * 100 / total))
-                progress_cb(pct)
-                now = time.time()
-                if now - last_log_time >= 2.5 or written >= total:
-                    elapsed = now - start_time
-                    mb_written = written / (1024**2)
-                    rate = mb_written / elapsed if elapsed > 0 else 0.0
-                    remaining = max(0, total - written)
-                    eta = remaining / (rate * 1024**2) if rate > 0 else 0
-                    log_func(f"   📊 {pct}% — {mb_written / 1024:.2f} GB — "
-                             f"{rate:.1f} MB/s — ETA {_format_eta(eta)}",
-                             is_info=True)
-                    last_log_time = now
-        try:
-            device.flush()
-            if force_fsync:
-                os.fsync(device.fileno())
-        except Exception as e:
-            log_func(f"⚠️ Flush físico: {e}", is_warning=True)
-        success = written == total
-        if success:
-            if IS_LINUX or IS_ANDROID or IS_TERMUX:
-                run_hidden(["sync"], timeout=30)
-            progress_cb(100)
-            log_func("✅ Clonagem DD concluída.", is_success=True)
-            if leave_raw:
-                log_func("🔒 Modo RAW ativado: disco será mantido offline.",
-                         is_info=True)
-            else:
-                log_func("🔄 Remontando pendrive automaticamente...",
-                         is_info=True)
-        else:
-            log_func(f"❌ Gravação incompleta: {written} de {total}.", is_error=True)
-        return success
-    except PermissionError:
-        log_func("❌ Acesso negado. Execute como admin/root.", is_error=True)
-        return False
-    except OSError as e:
-        log_func(f"❌ Falha de E/S: {e}", is_error=True)
-        return False
-    except Exception as e:
-        log_func(f"❌ Falha crítica: {e}", is_error=True)
-        return False
-    finally:
-        try:
-            if device is not None:
-                device.close()
-        except Exception:
-            pass
-        if prepared:
-            _finalize_device_after_dd(device_path, log_func,
-                                       is_windows_iso=is_windows_iso,
-                                       leave_raw=leave_raw)
-
-def verify_dd_write(iso_path: str, device_path: str, log_func,
-                    cancel_flag, algo: str = 'sha256') -> bool:
-    prepared = False
-    device = None
-    try:
-        total = os.path.getsize(iso_path)
-        log_func(f"🔍 Verificando gravação DD ({algo.upper()})...", is_info=True)
-        iso_hash = hashlib.new(algo)
-        with open(iso_path, "rb", buffering=0) as src:
-            while True:
-                if cancel_flag():
-                    return False
-                chunk = src.read(COPY_BUFFER_SIZE)
-                if not chunk:
-                    break
-                iso_hash.update(chunk)
-        if not _prepare_device_for_dd(device_path, log_func):
-            return False
-        prepared = True
-        device = _open_raw_device(device_path)
-        dev_hash = hashlib.new(algo)
-        remaining = total
-        while remaining > 0:
-            if cancel_flag():
-                return False
-            chunk = device.read(min(COPY_BUFFER_SIZE, remaining))
-            if not chunk:
-                raise OSError("Leitura prematuramente encerrada")
-            dev_hash.update(chunk)
-            remaining -= len(chunk)
-        src_digest = iso_hash.hexdigest()
-        dst_digest = dev_hash.hexdigest()
-        log_func(f"   ISO {algo.upper()}: {src_digest}", is_info=True)
-        log_func(f"   USB {algo.upper()}: {dst_digest}", is_info=True)
-        if src_digest != dst_digest:
-            log_func(f"❌ Verificação DD: {algo.upper()} divergente.", is_error=True)
-            return False
-        log_func(f"✅ Verificação DD: {algo.upper()} OK.", is_success=True)
-        return True
-    except Exception as e:
-        log_func(f"❌ Falha na verificação: {e}", is_error=True)
-        return False
-    finally:
-        try:
-            if device is not None:
-                device.close()
-        except Exception:
-            pass
-        if prepared:
-            _finalize_device_after_dd(device_path, log_func)
-
-def compute_checksums(iso_path, progress_cb=None) -> Dict[str, str]:
-    hashes = {}
-    for algo in ['md5', 'sha1', 'sha256', 'sha512', 'sha3_256', 'blake2b']:
-        try:
-            h = hashlib.new(algo)
-        except Exception:
-            continue
-        with open(iso_path, 'rb') as f:
-            while True:
-                chunk = f.read(8192 * 1024)
-                if not chunk:
-                    break
-                h.update(chunk)
-        hashes[algo] = h.hexdigest()
-        if progress_cb:
-            progress_cb(algo, hashes[algo])
-    return hashes
-
-# ==================================================================
-# 14. DOWNLOAD — ⭐ v3.4.0: SHA256 + Mirrors
-# ==================================================================
-def _sha256_file(filepath: str, progress_cb=None,
-                 cancel_flag=None) -> Optional[str]:
-    """Calcula SHA256 em blocos (sem estourar memória)."""
-    try:
-        h = hashlib.sha256()
-        total = os.path.getsize(filepath)
-        done = 0
-        last_report = 0.0
-        with open(filepath, 'rb') as f:
-            while True:
-                if cancel_flag and cancel_flag():
-                    return None
-                chunk = f.read(8 * 1024 * 1024)
-                if not chunk:
-                    break
-                h.update(chunk)
-                done += len(chunk)
-                now = time.time()
-                if progress_cb and (now - last_report >= 1.0):
-                    pct = int((done / total) * 100) if total > 0 else 0
-                    progress_cb(pct, f"Verificando SHA256... {pct}%")
-                    last_report = now
-        return h.hexdigest()
-    except Exception:
-        return None
-
-def verify_download_sha256(destino: str, distro_key: str,
-                            log_func=None,
-                            progress_cb=None,
-                            cancel_flag=None) -> Tuple[bool, str]:
-    """Verifica hash SHA256 do arquivo baixado."""
-    info = DISTRO_INFO.get(distro_key, {})
-    expected = (info.get("sha256") or "").strip().lower()
-    if not expected:
-        if log_func:
-            log_func(f"ℹ️ Sem hash SHA256 registrado para '{distro_key}'. "
-                     f"Verifique em: {info.get('docs', 'site oficial')}",
-                     is_info=True)
-        return True, "sem hash registrado"
-    if log_func:
-        log_func(f"🔐 Calculando SHA256 de {os.path.basename(destino)}...",
-                 is_info=True)
-    actual = _sha256_file(destino, progress_cb=progress_cb,
-                          cancel_flag=cancel_flag)
-    if actual is None:
-        return False, "falha ao calcular hash (cancelado?)"
-    if actual == expected:
-        if log_func:
-            log_func(f"✅ SHA256 OK: {actual}", is_success=True)
-        return True, "hash OK"
-    if log_func:
-        log_func(f"❌ SHA256 DIVERGENTE", is_error=True)
-        log_func(f"   Esperado: {expected}", is_error=True)
-        log_func(f"   Obtido:   {actual}", is_error=True)
-        log_func(f"   💡 Rebaixe de: {info.get('docs', 'site oficial')}",
-                 is_info=True)
-    return False, "hash divergente"
-
-def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
-    """Retorna lista de URLs a tentar (primária + mirrors oficiais)."""
-    urls = [primary_url]
-    if "Ubuntu" in distro_key:
-        urls.append(primary_url.replace("releases.ubuntu.com",
-                                         "mirrors.kernel.org/ubuntu-releases"))
-    elif "Debian" in distro_key:
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "mirror.ufscar.br/debian-cd"))
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "ftp.fi.debian.org/debian-cd"))
-    elif "Fedora" in distro_key:
-        urls.append(primary_url.replace("download.fedoraproject.org",
-                                         "mirrors.kernel.org/fedora"))
-    elif "Kali" in distro_key:
-        urls.append(primary_url.replace("cdimage.kali.org",
-                                         "mirror.ufscar.br/kali"))
-    seen = set()
-    out = []
-    for u in urls:
-        if u and u not in seen:
-            seen.add(u)
-            out.append(u)
-    return out
-
-def get_remote_size(url: str) -> int:
-    if shutil.which('curl'):
-        try:
-            result = run_hidden(
-                ['curl', '-I', '-L', '-s', '--connect-timeout', '10',
-                 '-A', BROWSER_UA, url],
-                timeout=30)
-            for line in (result.stdout or "").splitlines():
-                if line.lower().startswith('content-length:'):
-                    try:
-                        return int(line.split(':', 1)[1].strip())
-                    except ValueError:
-                        pass
-        except Exception:
-            pass
-    try:
-        req = urllib.request.Request(url, method='HEAD')
-        req.add_header('User-Agent', BROWSER_UA)
-        req.add_header('Accept', BROWSER_ACCEPT)
-        req.add_header('Accept-Language', BROWSER_ACCEPT_LANG)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            cl = resp.headers.get('Content-Length')
-            if cl:
-                return int(cl)
-    except Exception:
-        pass
-    return 0
-
-def _log_download_error(log_func, method, err):
-    if log_func:
-        log_func(f"   ⚠️ {method} falhou: {err}", is_warning=True)
-
-def download_with_curl(url, destino, progress_cb, cancel_flag,
-                       log_func=None) -> bool:
-    if not shutil.which('curl'):
-        return False
-    total = get_remote_size(url)
-    cmd = [
-        'curl', '-L', '--retry', '3', '--retry-delay', '3',
-        '--max-redirs', '10', '--connect-timeout', '30',
-        '-A', BROWSER_UA, '-o', destino, url
-    ]
-    if os.path.exists(destino) and os.path.getsize(destino) > 0:
-        cmd = [
-            'curl', '-L', '-C', '-', '--retry', '3', '--retry-delay', '3',
-            '--max-redirs', '10', '--connect-timeout', '30',
-            '-A', BROWSER_UA, '-o', destino, url
-        ]
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        creationflags=CREATE_NO_WINDOW if IS_WINDOWS else 0)
-    last_size = -1
-    stalled_seconds = 0
-    while proc.poll() is None:
-        if cancel_flag():
-            try:
-                proc.terminate()
-                time.sleep(0.5)
-                if proc.poll() is None:
-                    proc.kill()
-                proc.wait(timeout=5)
-            except Exception:
-                pass
-            if os.path.exists(destino):
-                try:
-                    os.remove(destino)
-                except Exception:
-                    pass
-            return False
-        if os.path.exists(destino):
-            current = os.path.getsize(destino)
-            if current == last_size:
-                stalled_seconds += 1
-            else:
-                stalled_seconds = 0
-                last_size = current
-            if total > 0:
-                pct = int((current / total) * 100)
-                progress_cb(pct, f"Baixando... {pct}% "
-                                  f"({_format_bytes(current)} de "
-                                  f"{_format_bytes(total)})")
-            else:
-                progress_cb(0, f"Baixando... {_format_bytes(current)}")
-            if stalled_seconds > 120:
-                if log_func:
-                    log_func("   ⚠️ curl estagnou — abortando.", is_warning=True)
-                try:
-                    proc.kill()
-                    proc.wait(timeout=5)
-                except Exception:
-                    pass
-                return False
-        time.sleep(1)
-    ok = proc.returncode == 0 and os.path.exists(destino) \
-        and os.path.getsize(destino) > 1024 * 1024
-    if not ok and log_func:
-        err_out = b""
-        try:
-            err_out = proc.stderr.read() or b""
-        except Exception:
-            pass
-        _log_download_error(log_func, "curl",
-                            _safe_decode(err_out)[:200] or
-                            f"returncode={proc.returncode}")
-    if not ok and os.path.exists(destino):
-        try:
-            size_now = os.path.getsize(destino)
-            if size_now < 1024 * 1024:
-                os.remove(destino)
-        except Exception:
-            pass
-    return ok
-
-def download_with_wget(url, destino, progress_cb, cancel_flag,
-                       log_func=None) -> bool:
-    if not shutil.which('wget'):
-        return False
-    total = get_remote_size(url)
-    cmd = [
-        'wget', '--tries=3', '--timeout=30', '--waitretry=3',
-        '--no-check-certificate', '--max-redirect=10',
-        f'--user-agent={BROWSER_UA}',
-        '-O', destino, url
-    ]
-    if os.path.exists(destino) and os.path.getsize(destino) > 0:
-        cmd = [
-            'wget', '-c', '--tries=3', '--timeout=30', '--waitretry=3',
-            '--no-check-certificate', '--max-redirect=10',
-            f'--user-agent={BROWSER_UA}',
-            '-O', destino, url
-        ]
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        creationflags=CREATE_NO_WINDOW if IS_WINDOWS else 0)
-    last_size = -1
-    stalled_seconds = 0
-    while proc.poll() is None:
-        if cancel_flag():
-            try:
-                proc.terminate()
-                time.sleep(0.5)
-                if proc.poll() is None:
-                    proc.kill()
-                proc.wait(timeout=5)
-            except Exception:
-                pass
-            if os.path.exists(destino):
-                try:
-                    os.remove(destino)
-                except Exception:
-                    pass
-            return False
-        if os.path.exists(destino):
-            current = os.path.getsize(destino)
-            if current == last_size:
-                stalled_seconds += 1
-            else:
-                stalled_seconds = 0
-                last_size = current
-            if total > 0:
-                pct = int((current / total) * 100)
-                progress_cb(pct, f"Baixando (wget)... {pct}% "
-                                  f"({_format_bytes(current)} de "
-                                  f"{_format_bytes(total)})")
-            else:
-                progress_cb(0, f"Baixando (wget)... {_format_bytes(current)}")
-            if stalled_seconds > 120:
-                if log_func:
-                    log_func("   ⚠️ wget estagnou — abortando.", is_warning=True)
-                try:
-                    proc.kill()
-                    proc.wait(timeout=5)
-                except Exception:
-                    pass
-                return False
-        time.sleep(1)
-    ok = proc.returncode == 0 and os.path.exists(destino) \
-        and os.path.getsize(destino) > 1024 * 1024
-    if not ok and log_func:
-        err_out = b""
-        try:
-            err_out = proc.stderr.read() or b""
-        except Exception:
-            pass
-        _log_download_error(log_func, "wget",
-                            _safe_decode(err_out)[:200] or
-                            f"returncode={proc.returncode}")
-    return ok
-
-def download_with_urllib(url, destino, progress_cb, cancel_flag,
-                         log_func=None) -> bool:
-    def _do_download(verify_ssl: bool = True):
-        total = get_remote_size(url)
-        headers = {
-            'User-Agent': BROWSER_UA,
-            'Accept': BROWSER_ACCEPT,
-            'Accept-Language': BROWSER_ACCEPT_LANG,
-            'Accept-Encoding': 'identity',
-            'Connection': 'keep-alive',
-        }
-        existing = 0
-        if os.path.exists(destino):
-            existing = os.path.getsize(destino)
-            if existing > 0:
-                headers['Range'] = f'bytes={existing}-'
-        req = urllib.request.Request(url, headers=headers)
-        if not verify_ssl:
-            try:
-                import ssl
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                opener = urllib.request.build_opener(
-                    urllib.request.HTTPSHandler(context=ctx))
-                resp_obj = opener.open(req, timeout=30)
-            except Exception:
-                resp_obj = urllib.request.urlopen(req, timeout=30)
-        else:
-            resp_obj = urllib.request.urlopen(req, timeout=30)
-        with resp_obj as resp:
-            content_length = resp.headers.get('Content-Length')
-            status = getattr(resp, 'status', 200)
-            if content_length:
-                cl = int(content_length)
-                if status == 206:
-                    total = existing + cl
-                else:
-                    total = cl
-            mode = 'ab' if existing > 0 and status == 206 else 'wb'
-            downloaded = existing if mode == 'ab' else 0
-            last_log = 0
-            with open(destino, mode) as f:
-                while True:
-                    if cancel_flag():
-                        try:
-                            f.close()
-                        except Exception:
-                            pass
-                        if os.path.exists(destino):
-                            try:
-                                os.remove(destino)
-                            except Exception:
-                                pass
-                        return False
-                    try:
-                        chunk = resp.read(1024 * 1024)
-                    except Exception:
-                        break
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    now = time.time()
-                    if now - last_log >= 1:
-                        if total > 0:
-                            pct = int((downloaded / total) * 100)
-                            progress_cb(pct, f"Baixando (urllib)... {pct}% "
-                                              f"({_format_bytes(downloaded)} de "
-                                              f"{_format_bytes(total)})")
-                        else:
-                            progress_cb(0, f"Baixando (urllib)... "
-                                            f"{_format_bytes(downloaded)}")
-                        last_log = now
-        return os.path.exists(destino) and os.path.getsize(destino) > 0
-    try:
-        ok = _do_download(verify_ssl=True)
-        if ok:
-            return True
-    except Exception as e:
-        if log_func:
-            log_func(f"   ⚠️ urllib (SSL verificado): {e}", is_warning=True)
-    try:
-        if os.path.exists(destino):
-            try:
-                if os.path.getsize(destino) < 1024 * 1024:
-                    os.remove(destino)
-            except Exception:
-                pass
-        return _do_download(verify_ssl=False)
-    except Exception as e:
-        if log_func:
-            log_func(f"   ⚠️ urllib (SSL inseguro): {e}", is_warning=True)
-        return False
-
-def download_with_fallback(url, destino, progress_cb, cancel_flag,
-                            log_func=None) -> bool:
-    if log_func:
-        log_func(f"⬇️ Iniciando download: {url}", is_info=True)
-    methods = []
-    if shutil.which('curl'):
-        methods.append(('curl', download_with_curl))
-    if shutil.which('wget'):
-        methods.append(('wget', download_with_wget))
-    methods.append(('urllib', download_with_urllib))
-    last_error = None
-    for name, fn in methods:
-        if cancel_flag():
-            return False
-        if log_func:
-            log_func(f"🔧 Tentando via {name}...", is_info=True)
-        try:
-            try:
-                ok = fn(url, destino, progress_cb, cancel_flag, log_func)
-            except TypeError:
-                ok = fn(url, destino, progress_cb, cancel_flag)
-            if cancel_flag():
-                return False
-            if ok:
-                try:
-                    size = os.path.getsize(destino)
-                    if size < MIN_ISO_SIZE:
-                        head, info = _inspect_file_bytes(destino, 32)
-                        if log_func:
-                            log_func(f"❌ Download inválido: "
-                                     f"{_format_bytes(size)}.", is_error=True)
-                            log_func(info, is_error=True)
-                        try:
-                            os.remove(destino)
-                        except Exception:
-                            pass
-                        last_error = f"{name}: arquivo muito pequeno"
-                        continue
-                except Exception:
-                    pass
-                distro_key = None
-                for k, v in DISTRO_INFO.items():
-                    if v.get("url") == url:
-                        distro_key = k
-                        break
-                if distro_key is None:
-                    base_noext = os.path.splitext(
-                        os.path.basename(destino))[0]
-                    for k in DISTRO_INFO.keys():
-                        if k.replace(" ", "_").replace("/", "_") == base_noext:
-                            distro_key = k
-                            break
-                if distro_key:
-                    ok_hash, hash_msg = verify_download_sha256(
-                        destino, distro_key, log_func,
-                        progress_cb=progress_cb,
-                        cancel_flag=cancel_flag)
-                    if not ok_hash:
-                        if log_func:
-                            log_func(f"⚠️ Download rejeitado: {hash_msg}. "
-                                     f"Arquivo mantido como .parcial",
-                                     is_warning=True)
-                        try:
-                            parcial = destino + ".parcial"
-                            os.rename(destino, parcial)
-                        except Exception:
-                            pass
-                        last_error = f"{name}: {hash_msg}"
-                        continue
-                if log_func:
-                    log_func(f"✅ Download concluído via {name}.",
-                             is_success=True)
-                return True
-            last_error = f"{name} falhou"
-            if log_func:
-                log_func(f"⚠️ {name} não conseguiu concluir; "
-                         f"tentando próximo método...", is_warning=True)
-        except Exception as e:
-            last_error = f"{name}: {e}"
-            if log_func:
-                log_func(f"⚠️ {name} erro: {e}", is_warning=True)
-            continue
-    if log_func:
-        log_func(f"❌ Todos os métodos falharam. Último erro: {last_error or '?'}",
-                 is_error=True)
-    return False
-
-# ==================================================================
-# 15. TOOLTIP
-# ==================================================================
-class ToolTip:
-    def __init__(self, widget, text_getter, delay=500, wraplength=300, margin=12):
-        self.widget = widget
-        self.text_getter = text_getter
-        self.delay = delay
-        self.wraplength = wraplength
-        self.margin = margin
-        self._after_id = None
-        self._tip = None
-        self._visible = False
-        widget.bind("<Enter>", self._schedule, add="+")
-        widget.bind("<Leave>", self._hide, add="+")
-        widget.bind("<ButtonPress>", self._hide, add="+")
-        widget.bind("<Destroy>", self._hide, add="+")
-
-    def _schedule(self, event=None):
-        self._cancel()
-        try:
-            self._after_id = self.widget.after(self.delay, self._show)
-        except Exception:
-            pass
-
-    def _cancel(self):
-        if self._after_id is not None:
-            try:
-                self.widget.after_cancel(self._after_id)
-            except Exception:
-                pass
-            self._after_id = None
-
-    def _show(self):
-        if self._visible:
-            return
-        try:
-            if not self.widget.winfo_exists():
-                return
-            text = (self.text_getter() if callable(self.text_getter)
-                    else self.text_getter)
-        except Exception:
-            text = None
-        if not text:
-            return
-        try:
-            tip = tk.Toplevel(self.widget)
-            tip.wm_overrideredirect(True)
-            tip.configure(bg=COLORS['frame_border'])
-            try:
-                tip.attributes("-topmost", True)
-            except Exception:
-                pass
-            outer = tk.Frame(tip, bg=COLORS['frame_border'], bd=0,
-                             highlightthickness=1,
-                             highlightbackground=COLORS['accent'])
-            outer.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-            lbl = tk.Label(outer, text=text, justify=tk.LEFT,
-                           bg=COLORS['frame_bg'], fg=COLORS['fg'],
-                           font=('Segoe UI', 9), padx=10, pady=7,
-                           wraplength=self.wraplength)
-            lbl.pack()
-            tip.update_idletasks()
-            tip_w = tip.winfo_reqwidth()
-            tip_h = tip.winfo_reqheight()
-            screen_w = tip.winfo_screenwidth()
-            screen_h = tip.winfo_screenheight()
-            m = self.margin
-            wx = self.widget.winfo_rootx()
-            wy = self.widget.winfo_rooty()
-            wh = self.widget.winfo_height()
-            x = wx + 12
-            y = wy + wh + 6
-            if x + tip_w > screen_w - m:
-                x = screen_w - tip_w - m
-            if x < m:
-                x = m
-            if y + tip_h > screen_h - m:
-                y_above = wy - tip_h - 6
-                if y_above >= m:
-                    y = y_above
-                else:
-                    y = screen_h - tip_h - m
-            if y < m:
-                y = m
-            x = max(m, min(x, screen_w - tip_w - m))
-            y = max(m, min(y, screen_h - tip_h - m))
-            tip.wm_geometry(f"+{x}+{y}")
-            self._tip = tip
-            self._visible = True
-        except Exception:
-            try:
-                if self._tip is not None:
-                    self._tip.destroy()
-            except Exception:
-                pass
-            self._tip = None
-            self._visible = False
-
-    def _hide(self, event=None):
-        self._cancel()
-        if self._tip is not None:
-            try:
-                self._tip.destroy()
-            except Exception:
-                pass
-            self._tip = None
-        self._visible = False
-
-# ==================================================================
-# 16. NEON THEME BALL — v3.3.0
-# ==================================================================
-class NeonThemeBall(tk.Canvas):
-    def __init__(self, parent, theme_labels, current_label, on_change, size=44):
-        try:
-            bg = parent.cget('bg')
-        except Exception:
-            bg = COLORS['bg']
-        super().__init__(parent, width=size, height=size,
-                         highlightthickness=2,
-                         highlightbackground=bg,
-                         highlightcolor=COLORS['accent'],
-                         bg=bg, takefocus=True)
-        self._size = size
-        self._phase = 0
-        self._trail_phase = 0.0
-        self._anim_id = None
-        self._theme_labels = list(theme_labels)
-        self._current_label = current_label
-        self._on_change = on_change
-        self._menu_open = False
-        self._writing = False
-        self._focused = False
-        self._focus_phase = 0
-        self._focus_anim_id = None
-        _PULSE_SUBSCRIBERS.append(self)
-        self.bind('<Button-1>', self._show_menu)
-        self.bind('<Enter>', lambda e: self.configure(cursor='hand2'))
-        self.bind('<Leave>', lambda e: self.configure(cursor=''))
-        self.bind('<FocusIn>', self._on_focus_in)
-        self.bind('<FocusOut>', self._on_focus_out)
-        self.bind('<Return>', self._on_key_activate)
-        self.bind('<KP_Enter>', self._on_key_activate)
-        self.bind('<space>', self._on_key_activate)
-        self.bind('<Tab>', self._on_tab_forward)
-        self.bind('<Shift-Tab>', self._on_tab_backward)
-        self.bind('<ISO_Left_Tab>', self._on_tab_backward)
-        self._start_anim()
-
-    def _on_tab_forward(self, e):
-        try:
-            nxt = self.tk_focusNext()
-            if nxt:
-                nxt.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def _on_tab_backward(self, e):
-        try:
-            prv = self.tk_focusPrev()
-            if prv:
-                prv.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def _on_focus_in(self, e):
-        self._focused = True
-        self._start_focus_anim()
-        self._update_highlight()
-        self._draw()
-
-    def _on_focus_out(self, e):
-        self._focused = False
-        self._stop_focus_anim()
-        self._update_highlight()
-        self._draw()
-
-    def _update_highlight(self):
-        try:
-            if self._focused:
-                self.configure(highlightbackground=COLORS['accent'],
-                               highlightcolor=COLORS['accent'],
-                               highlightthickness=2)
-            else:
-                try:
-                    parent_bg = self.master.cget('bg')
-                except Exception:
-                    parent_bg = COLORS['bg']
-                self.configure(highlightbackground=parent_bg,
-                               highlightcolor=parent_bg,
-                               highlightthickness=0)
-        except Exception:
-            pass
-
-    def _start_focus_anim(self):
-        if self._focus_anim_id is not None:
-            return
-        def tick():
-            try:
-                self._focus_phase = (self._focus_phase + 1) % 16
-                self._draw()
-                self._focus_anim_id = self.after(120, tick)
-            except Exception:
-                self._focus_anim_id = None
-        self._focus_anim_id = self.after(120, tick)
-
-    def _stop_focus_anim(self):
-        if self._focus_anim_id is not None:
-            try:
-                self.after_cancel(self._focus_anim_id)
-            except Exception:
-                pass
-            self._focus_anim_id = None
-
-    def _on_key_activate(self, e):
-        try:
-            x = self.winfo_rootx() + self._size // 2
-            y = self.winfo_rooty() + self._size
-            ev = type('Event', (), {'x_root': x, 'y_root': y})()
-            self._show_menu(ev)
-        except Exception:
-            pass
-        return "break"
-
-    def _hex_to_rgb(self, h):
-        h = h.lstrip('#')
-        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-
-    def _pulse(self, base, phase, amp=90):
-        try:
-            r, g, b = self._hex_to_rgb(base)
-        except Exception:
-            r, g, b = 0, 255, 255
-        off = int(amp * (0.5 + 0.5 * math.sin(phase * math.pi / 8)))
-        return (f"#{min(255, max(0, r + off)):02x}"
-                f"{min(255, max(0, g + off)):02x}"
-                f"{min(255, max(0, b + off)):02x}")
-
-    def _lerp_rgb(self, a, b, t):
-        t = max(0.0, min(1.0, t))
-        return (int(a[0] + (b[0] - a[0]) * t),
-                int(a[1] + (b[1] - a[1]) * t),
-                int(a[2] + (b[2] - a[2]) * t))
-
-    def _start_anim(self):
-        if self._anim_id is not None:
-            try:
-                self.after_cancel(self._anim_id)
-            except Exception:
-                pass
-            self._anim_id = None
-        if GLOBAL_PULSE_STATE['active']:
-            interval = 30
-        elif self._writing:
-            interval = 35
-        else:
-            interval = 70
-        def tick():
-            try:
-                self._phase = (self._phase + 1) % 32
-                self._trail_phase = (self._trail_phase + 0.35) % (2 * math.pi)
-                self._draw()
-                self._anim_id = self.after(interval, tick)
-            except Exception:
-                self._anim_id = None
-        self._anim_id = self.after(interval, tick)
-
-    def set_writing_mode(self, writing: bool):
-        if self._writing == writing:
-            return
-        self._writing = writing
-        self._start_anim()
-
-    def set_global_pulse(self, active: bool):
-        self._start_anim()
-
-    def _stop_anim(self):
-        if self._anim_id is not None:
-            try:
-                self.after_cancel(self._anim_id)
-            except Exception:
-                pass
-            self._anim_id = None
-
-    def _draw(self):
-        try:
-            self.delete('all')
-        except Exception:
-            return
-        s = self._size
-        cx = cy = s / 2.0
-        r_base = s / 2.0 - 7.0
-        global_on = GLOBAL_PULSE_STATE['active']
-        gp = GLOBAL_PULSE_STATE['phase'] if global_on else self._phase
-        try:
-            acc_rgb = self._hex_to_rgb(COLORS.get('accent', '#00ff41'))
-            acc2_rgb = self._hex_to_rgb(COLORS.get('accent2', '#00ccff'))
-        except Exception:
-            acc_rgb = (0, 255, 65)
-            acc2_rgb = (0, 204, 255)
-        n_trail = 6
-        for i in range(n_trail):
-            t = i / float(n_trail)
-            trail_r = r_base + 2.0 + i * 2.2
-            mix = self._lerp_rgb(acc_rgb, acc2_rgb, t)
-            pulse_off = int(90 * (0.5 + 0.5 * math.sin(
-                (self._phase + i * 2) * math.pi / 8)))
-            r_col = min(255, mix[0] + pulse_off)
-            g_col = min(255, mix[1] + pulse_off)
-            b_col = min(255, mix[2] + pulse_off)
-            fade = 1.0 - (i / float(n_trail))
-            r_col = int(r_col * fade + 20 * (1 - fade))
-            g_col = int(g_col * fade + 20 * (1 - fade))
-            b_col = int(b_col * fade + 20 * (1 - fade))
-            color = f"#{r_col:02x}{g_col:02x}{b_col:02x}"
-            try:
-                self.create_oval(cx - trail_r, cy - trail_r,
-                                 cx + trail_r, cy + trail_r,
-                                 outline=color,
-                                 width=max(1, 2 - i // 3))
-            except Exception:
-                pass
-        amp_ext = 220 if (global_on or self._writing) else 140
-        halo = self._pulse(COLORS.get('accent', '#00ff41'), gp, amp_ext)
-        for r_off, w_ in ((3.0, 3), (1.5, 2)):
-            self.create_oval(cx - r_base - r_off, cy - r_base - r_off,
-                             cx + r_base + r_off, cy + r_base + r_off,
-                             outline=halo, width=w_)
-        steps = 14
-        base_rgb = acc_rgb
-        pulse_off_core = int(70 * (0.5 + 0.5 * math.sin(gp * math.pi / 8)))
-        bright_rgb = (min(255, base_rgb[0] + pulse_off_core),
-                      min(255, base_rgb[1] + pulse_off_core),
-                      min(255, base_rgb[2] + pulse_off_core))
-        dark_rgb = (max(0, base_rgb[0] // 5),
-                    max(0, base_rgb[1] // 5),
-                    max(0, base_rgb[2] // 5))
-        for i in range(steps):
-            t = i / float(steps - 1)
-            r_now = r_base * (1.0 - t * 0.95)
-            col = self._lerp_rgb(dark_rgb, bright_rgb, t)
-            color = f"#{col[0]:02x}{col[1]:02x}{col[2]:02x}"
-            self.create_oval(cx - r_now, cy - r_now,
-                             cx + r_now, cy + r_now,
-                             fill=color, outline='')
-        hl_r = r_base * 0.32
-        hl_cx = cx - r_base * 0.33
-        hl_cy = cy - r_base * 0.38
-        self.create_oval(hl_cx - hl_r, hl_cy - hl_r,
-                         hl_cx + hl_r, hl_cy + hl_r,
-                         fill='#ffffff', outline='')
-        hl_r2 = hl_r * 0.55
-        self.create_oval(hl_cx - hl_r2, hl_cy - hl_r2,
-                         hl_cx + hl_r2, hl_cy + hl_r2,
-                         fill='#e8ffff', outline='')
-        if self._focused:
-            try:
-                ring_color = self._pulse(
-                    COLORS.get('accent', '#00ff41'), self._focus_phase, 180)
-                self.create_oval(1, 1, s - 1, s - 1,
-                                 outline=ring_color, width=2)
-                ring_color2 = self._pulse(
-                    COLORS.get('accent2', '#00ccff'),
-                    self._focus_phase + 4, 180)
-                self.create_oval(2, 2, s - 2, s - 2,
-                                 outline=ring_color2, width=1)
-            except Exception:
-                pass
-
-    def _show_menu(self, event):
-        if self._menu_open:
-            return
-        self._menu_open = True
-        try:
-            menu = tk.Menu(
-                self, tearoff=0, bg=COLORS['frame_bg'], fg=COLORS['fg'],
-                activebackground=COLORS['accent'], activeforeground='white',
-                font=('Segoe UI', 10, 'bold'), borderwidth=2, relief='flat')
-            for lbl in self._theme_labels:
-                prefix = "●  " if lbl == self._current_label else "     "
-                menu.add_command(label=prefix + lbl,
-                                 command=lambda l=lbl: self._select(l))
-            try:
-                menu.tk_popup(event.x_root, event.y_root)
-            finally:
-                try:
-                    menu.grab_release()
-                except Exception:
-                    pass
-        finally:
-            self._menu_open = False
-
-    def _select(self, label):
-        self._current_label = label
-        if self._on_change:
-            try:
-                self._on_change(label)
-            except Exception:
-                pass
-        self._draw()
-
-    def set_label(self, label):
-        self._current_label = label
-        self._draw()
-
-    def destroy(self):
-        self._stop_anim()
-        self._stop_focus_anim()
-        try:
-            _PULSE_SUBSCRIBERS.remove(self)
-        except ValueError:
-            pass
-        super().destroy()
-
-# ==================================================================
-# 17. ROUNDED BUTTON — v3.3.0
-# ==================================================================
-class RoundedButton(tk.Canvas):
-    def __init__(self, parent, text="", command=None, kind="normal",
-                 width=180, height=42, radius=21,
-                 font=('Segoe UI', 10, 'bold'), **kwargs):
-        try:
-            parent_bg = parent.cget('bg')
-        except Exception:
-            parent_bg = COLORS['bg']
-        super().__init__(parent, width=width, height=height,
-                         highlightthickness=0, bg=parent_bg,
-                         takefocus=True, **kwargs)
-        self._command = command
-        self._text = text
-        self._orig_font = font
-        self._font = font
-        self._radius = radius
-        self._kind = kind
-        self._hover = False
-        self._pressed = False
-        self._focused = False
-        self._persistent_focus = False
-        self._enabled = True
-        self._width = width
-        self._height = height
-        self._orig_width = width
-        self._focus_phase = 0
-        self._focus_anim_id = None
-        _PULSE_SUBSCRIBERS.append(self)
-        self._refresh_colors()
-        self._redraw()
-        self._bind_events()
-
-    def _bind_events(self):
-        self.bind('<Enter>', self._on_enter)
-        self.bind('<Leave>', self._on_leave)
-        self.bind('<Button-1>', self._on_press)
-        self.bind('<ButtonRelease-1>', self._on_release)
-        self.bind('<FocusIn>', self._on_focus_in)
-        self.bind('<FocusOut>', self._on_focus_out)
-        self.bind('<Return>', self._on_key_activate)
-        self.bind('<KP_Enter>', self._on_key_activate)
-        self.bind('<space>', self._on_key_activate)
-        self.bind('<Configure>', self._on_configure)
-        self.bind('<Tab>', self._on_tab_forward)
-        self.bind('<Shift-Tab>', self._on_tab_backward)
-        self.bind('<ISO_Left_Tab>', self._on_tab_backward)
-
-    def _on_tab_forward(self, e):
-        try:
-            nxt = self.tk_focusNext()
-            if nxt:
-                nxt.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def _on_tab_backward(self, e):
-        try:
-            prv = self.tk_focusPrev()
-            if prv:
-                prv.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def set_persistent_focus(self, on: bool):
-        if self._persistent_focus == on:
-            return
-        self._persistent_focus = on
-        if on:
-            self._start_focus_animation()
-        else:
-            if not self._focused:
-                self._stop_focus_animation()
-        self._redraw()
-
-    def _refresh_colors(self):
-        if self._kind == "primary":
-            self._bg_norm = COLORS['button_active']
-            self._bg_hover = COLORS['accent']
-            self._bg_press = COLORS['button_active']
-            self._fg = "white"
-            self._outline = COLORS['accent']
-        elif self._kind == "danger":
-            self._bg_norm = COLORS['cancel_bg']
-            self._bg_hover = COLORS['error']
-            self._bg_press = COLORS['cancel_bg']
-            self._fg = "white"
-            self._outline = COLORS['error']
-        elif self._kind == "warning":
-            self._bg_norm = "#7a4d00"
-            self._bg_hover = COLORS['warning']
-            self._bg_press = "#7a4d00"
-            self._fg = "white"
-            self._outline = COLORS['warning']
-        else:
-            self._bg_norm = COLORS['button_bg']
-            self._bg_hover = COLORS['button_hover']
-            self._bg_press = COLORS['button_bg']
-            self._fg = COLORS['button_fg']
-            self._outline = COLORS['frame_border']
-
-    def _rounded_polygon(self, x1, y1, x2, y2, r):
-        return [x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r, x2, y2 - r,
-                x2, y2, x2 - r, y2, x1 + r, y2, x1, y2, x1, y2 - r,
-                x1, y1 + r, x1, y1]
-
-    def _hex_to_rgb(self, h):
-        h = h.lstrip('#')
-        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-
-    def _pulse_color(self, base_hex, phase, amplitude=80):
-        try:
-            r, g, b = self._hex_to_rgb(base_hex)
-        except Exception:
-            r, g, b = 0, 255, 255
-        offset = int(amplitude * (0.5 + 0.5 * math.sin(phase * math.pi / 4)))
-        return (f"#{min(255, max(0, r + offset)):02x}"
-                f"{min(255, max(0, g + offset)):02x}"
-                f"{min(255, max(0, b + offset)):02x}")
-
-    def _redraw(self):
-        self.delete("all")
-        w, h, r = self._width, self._height, self._radius
-        if not self._enabled:
-            bg, fg, outline = COLORS['button_bg'], COLORS['led_off'], COLORS['frame_border']
-        elif self._pressed:
-            bg, fg, outline = self._bg_press, self._fg, self._bg_norm
-        elif self._hover:
-            bg, fg, outline = self._bg_hover, self._fg, self._outline
-        else:
-            bg, fg, outline = self._bg_norm, self._fg, self._outline
-        border = 2
-        self.create_polygon(self._rounded_polygon(border, border, w - border,
-                                                   h - border, r),
-                            smooth=True, splinesteps=24, fill=outline,
-                            outline=outline)
-        self.create_polygon(self._rounded_polygon(border * 2, border * 2,
-                                                   w - border * 2,
-                                                   h - border * 2, r - 2),
-                            smooth=True, splinesteps=24, fill=bg, outline=bg)
-        if GLOBAL_PULSE_STATE['active'] and self._enabled:
-            gp = GLOBAL_PULSE_STATE['phase']
-            for thick, pad, amp in ((9, 7, 220), (7, 5, 200),
-                                     (5, 3, 180), (3, 1, 160)):
-                halo = self._pulse_color(
-                    COLORS.get('accent', '#00ff41'), gp, amp)
-                pts = self._rounded_polygon(-pad, -pad, w + pad, h + pad,
-                                            r + pad + 2)
-                self.create_polygon(pts, smooth=True, splinesteps=24,
-                                    fill='', outline=halo, width=thick)
-            mid = self._pulse_color(COLORS.get('accent2', '#00ccff'),
-                                    gp + 4, 200)
-            pts = self._rounded_polygon(-2, -2, w + 2, h + 2, r + 3)
-            self.create_polygon(pts, smooth=True, splinesteps=24,
-                                fill='', outline=mid, width=3)
-        if (self._focused or self._persistent_focus) and self._enabled:
-            phase = self._focus_phase
-            halo = self._pulse_color(COLORS.get('accent', '#00ff41'), phase, 160)
-            for thick, pad in ((7, 5), (5, 4), (3, 3)):
-                pts = self._rounded_polygon(-pad, -pad, w + pad, h + pad,
-                                            r + pad + 2)
-                self.create_polygon(pts, smooth=True, splinesteps=24,
-                                    fill='', outline=halo, width=thick)
-            mid = self._pulse_color(COLORS.get('accent2', '#00ccff'),
-                                    phase + 4, 160)
-            for thick, pad in ((5, 2), (4, 1)):
-                pts = self._rounded_polygon(-pad, -pad, w + pad, h + pad,
-                                            r + pad + 1)
-                self.create_polygon(pts, smooth=True, splinesteps=24,
-                                    fill='', outline=mid, width=thick)
-            inner = self._pulse_color(COLORS.get('accent', '#00ff41'),
-                                      phase + 8, 130)
-            pts = self._rounded_polygon(1, 1, w - 1, h - 1, r + 1)
-            self.create_polygon(pts, smooth=True, splinesteps=24,
-                                fill='', outline=inner, width=2)
-        self.create_text(w // 2, h // 2, text=self._text, fill=fg,
-                         font=self._font, justify=tk.CENTER)
-
-    def _start_focus_animation(self):
-        if self._focus_anim_id is not None:
-            return
-        def _tick():
-            try:
-                self._focus_phase = (self._focus_phase + 1) % 16
-                self._redraw()
-                self._focus_anim_id = self.after(140, _tick)
-            except Exception:
-                self._focus_anim_id = None
-        self._focus_anim_id = self.after(140, _tick)
-
-    def _stop_focus_animation(self):
-        if self._focus_anim_id is not None:
-            try:
-                self.after_cancel(self._focus_anim_id)
-            except Exception:
-                pass
-            self._focus_anim_id = None
-
-    def _on_configure(self, event):
-        self._width = max(1, event.width)
-        self._height = max(1, event.height)
-        self._radius = self._height // 2
-        try:
-            family = self._orig_font[0]
-            base_size = self._orig_font[1]
-            extras = self._orig_font[2:] if len(self._orig_font) > 2 else ()
-            if isinstance(base_size, int) and self._orig_width > 0:
-                if self._width < self._orig_width * 0.6:
-                    new_size = max(7, int(base_size * 0.75))
-                elif self._width < self._orig_width * 0.8:
-                    new_size = max(8, int(base_size * 0.88))
-                else:
-                    new_size = base_size
-                self._font = (family, new_size, *extras)
-        except Exception:
-            pass
-        self._redraw()
-
-    def _on_enter(self, e):
-        if self._enabled:
-            self._hover = True
-            self._redraw()
-
-    def _on_leave(self, e):
-        self._hover = False
-        self._redraw()
-
-    def _on_press(self, e):
-        if self._enabled:
-            self._pressed = True
-            self.focus_set()
-            self._redraw()
-
-    def _on_release(self, e):
-        if self._enabled and self._pressed:
-            self._pressed = False
-            self._redraw()
-            if self._command:
-                try:
-                    self._command()
-                except Exception:
-                    pass
-
-    def _on_focus_in(self, e):
-        self._focused = True
-        self._start_focus_animation()
-        self._redraw()
-
-    def _on_focus_out(self, e):
-        self._focused = False
-        if not self._persistent_focus:
-            self._stop_focus_animation()
-        self._redraw()
-
-    def _on_key_activate(self, e):
-        if self._enabled and self._command:
-            try:
-                self._command()
-            except Exception:
-                pass
-        return "break"
-
-    def config(self, **kwargs):
-        if 'state' in kwargs:
-            st = kwargs.pop('state')
-            self._enabled = (st != "disabled" and st != tk.DISABLED)
-        if 'text' in kwargs:
-            self._text = kwargs.pop('text')
-        if 'bg' in kwargs:
-            self._bg_norm = kwargs.pop('bg')
-        if 'fg' in kwargs:
-            self._fg = kwargs.pop('fg')
-        if kwargs:
-            try:
-                super().config(**kwargs)
-            except Exception:
-                pass
-        self._redraw()
-
-    configure = config
-
-    def destroy(self):
-        try:
-            _PULSE_SUBSCRIBERS.remove(self)
-        except ValueError:
-            pass
-        super().destroy()
-
-# ==================================================================
-# 18. NEON TAB BAR
-# ==================================================================
-class NeonTabBar(tk.Frame):
-    def __init__(self, parent, tabs_data, on_change, **kwargs):
-        try:
-            bg = parent.cget('bg')
-        except Exception:
-            bg = COLORS['bg']
-        super().__init__(parent, bg=bg, **kwargs)
-        self._on_change = on_change
-        self._buttons = []
-        self._current = -1
-        for i, tab in enumerate(tabs_data):
-            icon = tab.get('icon', '')
-            label = tab.get('label', '')
-            short = tab.get('short', label)
-            text = f"{icon}\n{short}"
-            btn = RoundedButton(
-                self, text=text,
-                command=lambda idx=i: self.select(idx),
-                kind="normal",
-                width=80, height=54, radius=14,
-                font=('Segoe UI', 8, 'bold'))
-            btn.pack(side=tk.LEFT, padx=1, pady=2, fill=tk.X, expand=True)
-            self._buttons.append(btn)
-        if self._buttons:
-            self.select(0, silent=True)
-
-    def select(self, idx, silent=False):
-        if idx < 0 or idx >= len(self._buttons):
-            return
-        if self._current == idx and not silent:
-            return
-        for i, btn in enumerate(self._buttons):
-            if i == idx:
-                btn._kind = "primary"
-                btn._refresh_colors()
-                btn.set_persistent_focus(True)
-            else:
-                btn._kind = "normal"
-                btn._refresh_colors()
-                btn.set_persistent_focus(False)
-        self._current = idx
-        if not silent and self._on_change:
-            try:
-                self._on_change(idx)
-            except Exception:
-                pass
-
-    def current(self):
-        return self._current
-
-# ==================================================================
-# 19. ULTIMATE POPUP
-# ==================================================================
-class UltimatePopup:
-    MIN_W = 360
-    MAX_W = 720
-    MIN_H = 190
-    MAX_H = 700
-    SCREEN_MARGIN = 24
-    _grab_owner = None
-
-    @classmethod
-    def _work_area(cls, parent):
-        try:
-            sw = max(640, int(parent.winfo_screenwidth()))
-            sh = max(480, int(parent.winfo_screenheight()))
-            try:
-                vx = int(parent.winfo_vrootx())
-                vy = int(parent.winfo_vrooty())
-            except Exception:
-                vx, vy = 0, 0
-            return vx, vy, sw, sh
-        except Exception:
-            return 0, 0, 1280, 800
-
-    @classmethod
-    def _popup_size(cls, parent, message, title=None):
-        vx, vy, sw, sh = cls._work_area(parent)
-        usable_w = max(cls.MIN_W, sw - cls.SCREEN_MARGIN * 2)
-        usable_h = max(cls.MIN_H, sh - cls.SCREEN_MARGIN * 2)
-        lines = str(message).splitlines() or [""]
-        longest = max((len(line) for line in lines), default=20)
-        natural_w = 380 + min(320, longest * 4)
-        natural_h = 170 + min(440, len(lines) * 17)
-        w = min(cls.MAX_W, usable_w, max(cls.MIN_W, natural_w))
-        h = min(cls.MAX_H, usable_h, max(cls.MIN_H, natural_h))
-        return max(cls.MIN_W, w), max(cls.MIN_H, h)
-
-    @classmethod
-    def _place(cls, dlg, anchor, width, height):
-        try:
-            dlg.update_idletasks()
-        except Exception:
-            pass
-        try:
-            px = int(anchor.winfo_rootx())
-            py = int(anchor.winfo_rooty())
-            pw = max(1, int(anchor.winfo_width()))
-            ph = max(1, int(anchor.winfo_height()))
-        except Exception:
-            px = py = 0
-            pw, ph = dlg.winfo_screenwidth(), dlg.winfo_screenheight()
-        vx, vy, sw, sh = cls._work_area(anchor)
-        x = px + (pw - width) // 2
-        y = py + (ph - height) // 2
-        min_x = vx + cls.SCREEN_MARGIN
-        min_y = vy + cls.SCREEN_MARGIN
-        max_x = vx + sw - width - cls.SCREEN_MARGIN
-        max_y = vy + sh - height - cls.SCREEN_MARGIN
-        x = min_x if max_x < min_x else max(min_x, min(x, max_x))
-        y = min_y if max_y < min_y else max(min_y, min(y, max_y))
-        try:
-            dlg.geometry(f"{int(width)}x{int(height)}+{int(x)}+{int(y)}")
-        except Exception:
-            pass
-
-    @classmethod
-    def _acquire_grab(cls, dlg):
-        try:
-            if not dlg.winfo_exists():
-                return
-            if cls._grab_owner is not None:
-                try:
-                    if cls._grab_owner.winfo_exists():
-                        return
-                except Exception:
-                    cls._grab_owner = None
-            try:
-                dlg.grab_set()
-                cls._grab_owner = dlg
-            except Exception:
-                pass
-        except Exception:
-            pass
-
-    @classmethod
-    def _release_grab(cls, dlg):
-        try:
-            if cls._grab_owner is dlg:
-                cls._grab_owner = None
-        except Exception:
-            pass
-        try:
-            if dlg.winfo_exists():
-                dlg.grab_release()
-        except Exception:
-            pass
-
-    @classmethod
-    def show(cls, parent, title, message, kind="info"):
-        return cls.ask(parent, title, message, kind=kind, buttons=("OK",))
-
-    @classmethod
-    def ask(cls, parent, title, message, kind="question",
-            buttons=("Sim", "Não")):
-        colors = COLORS
-        dlg = tk.Toplevel(parent)
-        dlg.title(str(title))
-        dlg.configure(bg=colors['bg'])
-        try:
-            dlg.transient(parent)
-        except Exception:
-            pass
-        dlg.resizable(True, True)
-        width, height = cls._popup_size(parent, message, title)
-        dlg.minsize(cls.MIN_W, cls.MIN_H)
-        cls._place(dlg, parent, width, height)
-        _reposition = {'after': None, 'last': (width, height)}
-        def _schedule_reposition(event=None):
-            if _reposition['after'] is not None:
-                try:
-                    dlg.after_cancel(_reposition['after'])
-                except Exception:
-                    pass
-            _reposition['after'] = dlg.after(150, _do_reposition)
-        def _do_reposition():
-            _reposition['after'] = None
-            try:
-                if not dlg.winfo_exists():
-                    return
-                vx, vy, sw, sh = cls._work_area(parent)
-                cw = min(max(cls.MIN_W, dlg.winfo_width()),
-                         max(cls.MIN_W, sw - cls.SCREEN_MARGIN * 2))
-                ch = min(max(cls.MIN_H, dlg.winfo_height()),
-                         max(cls.MIN_H, sh - cls.SCREEN_MARGIN * 2))
-                if (cw, ch) == _reposition['last']:
-                    return
-                _reposition['last'] = (cw, ch)
-                cls._place(dlg, parent, cw, ch)
-            except Exception:
-                pass
-        dlg.bind('<Configure>', _schedule_reposition, add='+')
-        outer = tk.Frame(dlg, bg=colors['frame_bg'],
-                         highlightbackground=colors['frame_border'],
-                         highlightcolor=colors['accent'], highlightthickness=2)
-        outer.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
-        outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(1, weight=1)
-        outer.rowconfigure(2, weight=0)
-        icon_map = {"error": "❌", "warning": "⚠️", "success": "✅",
-                    "question": "❓", "info": "ℹ️"}
-        color_map = {"error": colors['error'], "warning": colors['warning'],
-                     "success": colors['success'], "question": colors['accent2'],
-                     "info": colors['info']}
-        icon = icon_map.get(kind, "ℹ️")
-        accent = color_map.get(kind, colors['accent'])
-        header = tk.Frame(outer, bg=colors['frame_bg'])
-        header.grid(row=0, column=0, sticky='ew', padx=16, pady=(14, 8))
-        header.columnconfigure(1, weight=1)
-        tk.Label(header, text=icon, font=('Segoe UI Emoji', 22, 'bold'),
-                 fg=accent, bg=colors['frame_bg']).grid(row=0, column=0, padx=(0, 10))
-        tk.Label(header, text=str(title), font=('Segoe UI', 13, 'bold'),
-                 fg=colors['fg'], bg=colors['frame_bg'], anchor='w',
-                 justify=tk.LEFT, wraplength=max(240, width - 120)).grid(
-                     row=0, column=1, sticky='ew')
-        body = tk.Frame(outer, bg=colors['frame_bg'])
-        body.grid(row=1, column=0, sticky='nsew', padx=16, pady=4)
-        body.columnconfigure(0, weight=1)
-        body.rowconfigure(0, weight=1)
-        text = tk.Text(body, bg=colors['entry_bg'], fg=colors['entry_fg'],
-                       insertbackground=colors['fg'], font=('Consolas', 9),
-                       wrap=tk.WORD, relief=tk.FLAT, bd=0, padx=12, pady=10,
-                       highlightthickness=1,
-                       highlightbackground=colors['frame_border'])
-        text.grid(row=0, column=0, sticky='nsew')
-        scroll = ttk.Scrollbar(body, orient=tk.VERTICAL, command=text.yview,
-                                style='Vertical.TScrollbar')
-        scroll.grid(row=0, column=1, sticky='ns')
-        text.configure(yscrollcommand=scroll.set)
-        text.insert('1.0', str(message))
-        text.configure(state='disabled', takefocus=0)
-        text.bind('<Tab>', lambda e: 'break')
-        def _on_text_wheel(event):
-            try:
-                text.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            except Exception:
-                pass
-            return "break"
-        def _on_text_wheel_up(event):
-            text.yview_scroll(-3, "units"); return "break"
-        def _on_text_wheel_down(event):
-            text.yview_scroll(3, "units"); return "break"
-        for w in (text, body, outer, dlg):
-            w.bind('<MouseWheel>', _on_text_wheel, add='+')
-            w.bind('<Button-4>', _on_text_wheel_up, add='+')
-            w.bind('<Button-5>', _on_text_wheel_down, add='+')
-        try:
-            dlg.bind_all('<MouseWheel>', _on_text_wheel, add='+')
-        except Exception:
-            pass
-        footer = tk.Frame(outer, bg=colors['frame_bg'])
-        footer.grid(row=2, column=0, sticky='ew', padx=16, pady=(8, 14))
-        n_buttons = len(buttons)
-        for i in range(n_buttons):
-            footer.columnconfigure(i, weight=1)
-        result = {'value': False}
-        _closed = {'done': False}
-        def finish(value):
-            if _closed['done']:
-                return
-            _closed['done'] = True
-            result['value'] = bool(value)
-            if _reposition['after'] is not None:
-                try:
-                    dlg.after_cancel(_reposition['after'])
-                except Exception:
-                    pass
-                _reposition['after'] = None
-            try:
-                dlg.unbind_all('<MouseWheel>')
-            except Exception:
-                pass
-            cls._release_grab(dlg)
-            try:
-                dlg.destroy()
-            except Exception:
-                pass
-        first_btn = None
-        for idx, label in enumerate(buttons):
-            positive = _button_is_positive(label)
-            kind_btn = 'primary' if positive else 'danger'
-            btn = RoundedButton(footer, text=str(label),
-                                command=lambda v=positive: finish(v),
-                                kind=kind_btn, width=120, height=38, radius=19,
-                                font=('Segoe UI', 10, 'bold'))
-            btn.grid(row=0, column=idx, padx=5, sticky='ew')
-            if first_btn is None:
-                first_btn = btn
-        dlg.bind('<Escape>', lambda e: finish(False))
-        dlg.protocol('WM_DELETE_WINDOW', lambda: finish(False))
-        try:
-            if first_btn is not None:
-                first_btn.focus_set()
-        except Exception:
-            pass
-        dlg.after(150, lambda: cls._acquire_grab(dlg))
-        dlg.wait_window()
-        return result['value']
-
-# ==================================================================
-# 20. MONETIZAÇÃO / OTG
-# ==================================================================
-class MonetizationManager:
-    def __init__(self, is_pro_version: bool = False):
-        self.is_pro = is_pro_version
-
-    def should_show_ads(self) -> bool:
-        return not self.is_pro
-
-    def trigger_interstitial_ad(self, log_func=None):
-        if self.should_show_ads():
-            if log_func:
-                log_func("[ADS] Exibindo anúncio intersticial antes do início "
-                         "da gravação...", is_info=True)
-
-class OTGDeviceManager:
-    @staticmethod
-    def get_otg_drives() -> List[str]:
-        otg_paths = []
-        base_mnt = "/storage"
-        if os.path.exists(base_mnt):
-            try:
-                for entry in os.listdir(base_mnt):
-                    if entry in ("emulated", "self"):
-                        continue
-                    full_path = os.path.join(base_mnt, entry)
-                    if os.path.ismount(full_path) or os.access(full_path, os.W_OK):
-                        otg_paths.append(full_path)
-            except Exception:
-                pass
-        return otg_paths
-
-# ==================================================================
-# 20B. LOGO CLICÁVEL PENBOOT (v3.3.0)
-# ==================================================================
-class ClickableLogo(tk.Frame):
-    def __init__(self, parent, version: str, on_click, **kwargs):
-        try:
-            parent_bg = parent.cget('bg')
-        except Exception:
-            parent_bg = COLORS['bg']
-        super().__init__(parent, bg=parent_bg, **kwargs)
-        self._on_click = on_click
-        self._parent_bg = parent_bg
-        self._phase = 0
-        self._anim_id = None
-        self._hover = False
-        self._focused = False
-        self._icon_lbl = tk.Label(
-            self, text="🔌",
-            font=('Segoe UI Emoji', 15, 'bold'),
-            fg=COLORS['accent'], bg=parent_bg, cursor='hand2')
-        self._icon_lbl.pack(side=tk.LEFT)
-        self._text_lbl = tk.Label(
-            self, text="DARKPENBOOT",
-            font=('Segoe UI', 13, 'bold'),
-            fg=COLORS['accent'], bg=parent_bg, cursor='hand2')
-        self._text_lbl.pack(side=tk.LEFT)
-        self._ver_lbl = tk.Label(
-            self, text=f" v{version}",
-            font=('Segoe UI', 8),
-            fg=COLORS['label_fg'], bg=parent_bg, cursor='hand2')
-        self._ver_lbl.pack(side=tk.LEFT)
-        self._hint_lbl = tk.Label(
-            self, text="  ⓘ",
-            font=('Segoe UI', 9, 'bold'),
-            fg=COLORS['info'], bg=parent_bg, cursor='hand2')
-        self._hint_lbl.pack(side=tk.LEFT)
-        for w in (self, self._icon_lbl, self._text_lbl,
-                  self._ver_lbl, self._hint_lbl):
-            w.bind('<Button-1>', self._clicked)
-            w.bind('<Enter>', self._enter)
-            w.bind('<Leave>', self._leave)
-        self.configure(takefocus=True, highlightthickness=0)
-        try:
-            self._text_lbl.configure(takefocus=True)
-        except Exception:
-            pass
-        for w in (self, self._text_lbl):
-            w.bind('<Return>', self._clicked)
-            w.bind('<KP_Enter>', self._clicked)
-            w.bind('<space>', self._clicked)
-            w.bind('<FocusIn>', self._focus_in)
-            w.bind('<FocusOut>', self._focus_out)
-            w.bind('<Tab>', self._tab_forward)
-            w.bind('<Shift-Tab>', self._tab_backward)
-            w.bind('<ISO_Left_Tab>', self._tab_backward)
-        self._start_anim()
-
-    def _tab_forward(self, e):
-        try:
-            nxt = self._text_lbl.tk_focusNext()
-            if nxt:
-                nxt.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def _tab_backward(self, e):
-        try:
-            prv = self._text_lbl.tk_focusPrev()
-            if prv:
-                prv.focus_set()
-        except Exception:
-            pass
-        return "break"
-
-    def _hex_to_rgb(self, h):
-        h = h.lstrip('#')
-        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-
-    def _pulse(self, base, amp=120):
-        try:
-            r, g, b = self._hex_to_rgb(base)
-        except Exception:
-            r, g, b = 0, 255, 65
-        off = int(amp * (0.5 + 0.5 * math.sin(self._phase * math.pi / 8)))
-        return (f"#{min(255, max(0, r + off)):02x}"
-                f"{min(255, max(0, g + off)):02x}"
-                f"{min(255, max(0, b + off)):02x}")
-
-    def _start_anim(self):
-        if self._anim_id is not None:
-            return
-        interval = 55 if GLOBAL_PULSE_STATE['active'] else 90
-        def tick():
-            try:
-                self._phase = (self._phase + 1) % 16
-                self._update_colors()
-                self._anim_id = self.after(interval, tick)
-            except Exception:
-                self._anim_id = None
-        self._anim_id = self.after(interval, tick)
-
-    def _update_colors(self):
-        if GLOBAL_PULSE_STATE['active']:
-            base = COLORS['accent']
-            c1 = self._pulse(base, 220)
-            c2 = self._pulse(COLORS['accent2'], 200)
-            self._icon_lbl.configure(fg=c1)
-            self._text_lbl.configure(fg=c1)
-            self._ver_lbl.configure(fg=c2)
-            self._hint_lbl.configure(fg=c2)
-        elif self._hover or self._focused:
-            c = self._pulse(COLORS['accent'], 160)
-            self._icon_lbl.configure(fg=c)
-            self._text_lbl.configure(fg=c)
-            self._ver_lbl.configure(fg=COLORS['accent2'])
-            self._hint_lbl.configure(fg=COLORS['accent2'])
-        else:
-            self._icon_lbl.configure(fg=COLORS['accent'])
-            self._text_lbl.configure(fg=COLORS['accent'])
-            self._ver_lbl.configure(fg=COLORS['label_fg'])
-            self._hint_lbl.configure(fg=COLORS['info'])
-
-    def _enter(self, e=None):
-        self._hover = True
-        self._update_colors()
-
-    def _leave(self, e=None):
-        self._hover = False
-        self._update_colors()
-
-    def _focus_in(self, e=None):
-        self._focused = True
-        self._update_colors()
-
-    def _focus_out(self, e=None):
-        self._focused = False
-        self._update_colors()
-
-    def _clicked(self, e=None):
-        try:
-            if callable(self._on_click):
-                self._on_click()
-        except Exception:
-            pass
-        return "break"
-
-    def destroy(self):
-        if self._anim_id is not None:
-            try:
-                self.after_cancel(self._anim_id)
-            except Exception:
-                pass
-            self._anim_id = None
-        super().destroy()
-
 # ==================================================================
 # 21. INTERFACE PRINCIPAL — v3.4.0
 # ==================================================================
@@ -7316,7 +5135,7 @@ class DarkPenBoot:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title(f"🔌 {APP_NAME} v{APP_VERSION}")
-        root._darkpenboot_owner = self
+        setattr(root, '_darkpenboot_owner', self)
         self.config = load_config()
         root.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
         root.maxsize(3840, 2160)
@@ -7338,12 +5157,12 @@ class DarkPenBoot:
         self.download_cancel_requested: bool = False
         self._tooltips: List[ToolTip] = []
         self._last_was_dd_windows: bool = False
-        self._tab_bar = None
+        self._tab_bar: Optional[NeonTabBar] = None
         self._tab_frames: List[tk.Frame] = []
         self._tab_canvases = []
         self._active_tab_canvas = None
         self._active_tab_frame = None
-        self.neon_ball = None
+        self.neon_ball: Optional[NeonThemeBall] = None
         self._focus_scroll_after = None
         self._log_buffer: List[str] = []
         self._max_log_buffer = 500
@@ -7352,7 +5171,7 @@ class DarkPenBoot:
         self._operation_mode: str = ""
         self._current_usb_tier: str = "UNKNOWN"
         self._recovery_active: bool = False
-        self._global_pulse_after = None
+        self._global_pulse_after: Optional[str] = None
         self.ad_mode = self.config.get('ad_mode', AD_MODE)
         self.premium_unlocked = bool(self.config.get('premium_unlocked', False))
         if self.premium_unlocked:
@@ -7590,6 +5409,7 @@ class DarkPenBoot:
                     self.root.after_cancel(self._focus_scroll_after)
                 except Exception:
                     pass
+                self._focus_scroll_after = None
             self._focus_scroll_after = self.root.after(
                 30, lambda ww=w: self._ensure_visible(ww))
         except Exception:
@@ -7674,10 +5494,20 @@ class DarkPenBoot:
             pass
 
     def _global_pulse_tick(self):
-        if not GLOBAL_PULSE_STATE['active']:
+        reactive = REACTIVE_PULSE_STATE['active']
+        if (reactive and time.time() * 1000 >
+                REACTIVE_PULSE_STATE['until_ts']):
+            REACTIVE_PULSE_STATE['active'] = False
+            REACTIVE_PULSE_STATE['intensity'] = 0
+            reactive = False
+        if not GLOBAL_PULSE_STATE['active'] and not reactive:
             return
-        GLOBAL_PULSE_STATE['phase'] = (
-            GLOBAL_PULSE_STATE['phase'] + 1) % 16
+        if GLOBAL_PULSE_STATE['active']:
+            GLOBAL_PULSE_STATE['phase'] = (
+                GLOBAL_PULSE_STATE['phase'] + 1) % 16
+        if reactive:
+            REACTIVE_PULSE_STATE['phase'] = (
+                REACTIVE_PULSE_STATE['phase'] + 1) % 16
         for w in list(_PULSE_SUBSCRIBERS):
             try:
                 if w.winfo_exists():
@@ -7687,9 +5517,12 @@ class DarkPenBoot:
                         w._draw()
             except Exception:
                 pass
+        interval = (GLOBAL_PULSE_STATE['interval_ms'] if not reactive else
+                    {0: 40, 1: 32, 2: 22, 3: 14}.get(
+                        REACTIVE_PULSE_STATE['intensity'], 22))
         try:
             self._global_pulse_after = self.root.after(
-                GLOBAL_PULSE_STATE['interval_ms'], self._global_pulse_tick)
+                interval, self._global_pulse_tick)
         except Exception:
             self._global_pulse_after = None
 
@@ -7698,9 +5531,10 @@ class DarkPenBoot:
             if not GLOBAL_PULSE_STATE['active']:
                 return
             GLOBAL_PULSE_STATE['active'] = False
-            if getattr(self, '_global_pulse_after', None):
+            pulse_after = self._global_pulse_after
+            if pulse_after is not None:
                 try:
-                    self.root.after_cancel(self._global_pulse_after)
+                    self.root.after_cancel(pulse_after)
                 except Exception:
                     pass
                 self._global_pulse_after = None
@@ -7726,6 +5560,24 @@ class DarkPenBoot:
                 _do()
         else:
             _do()
+
+    def trigger_reactive_pulse(self, intensity: int = 2,
+                               duration_ms: int = 1200,
+                               log_msg: Optional[str] = None):
+        _trigger_reactive_pulse(intensity, duration_ms)
+        if self._global_pulse_after is None:
+            self._global_pulse_tick()
+        try:
+            ball_ref = self.neon_ball
+            if ball_ref is not None:
+                ball_ref.set_writing_mode(True)
+                self.root.after(
+                    duration_ms + 100,
+                    lambda b=ball_ref: b.set_writing_mode(False))
+        except Exception:
+            pass
+        if log_msg:
+            self.log(log_msg, is_info=True)
 
     # ==================================================================
     # ⭐ v3.4.0 — PREMIUM
@@ -7785,7 +5637,7 @@ class DarkPenBoot:
         try:
             msg = (
                 "╔══════════════════════════════════════════════╗\n"
-                "║   🔌 DARKPENBOOT PRO v3.4.0 — INSTRUÇÕES     ║\n"
+                "║   🔌 DARKPENBOOT PRO v3.5.0 — INSTRUÇÕES     ║\n"
                 "╚══════════════════════════════════════════════╝\n\n"
                 "📌 FLUXO BÁSICO (3 PASSOS)\n"
                 "─────────────────────────────────────────────\n"
@@ -7855,7 +5707,7 @@ class DarkPenBoot:
                 "═════════════════════════════════════════════"
             )
             UltimatePopup.show(
-                self.root, "📖 Instruções — DarkPenBoot Pro v3.4.0",
+                self.root, "📖 Instruções — DarkPenBoot Pro v3.5.0",
                 msg, kind="info")
             self.log("📖 Popup de instruções aberto.", is_info=True)
         except Exception as e:
@@ -7871,7 +5723,7 @@ class DarkPenBoot:
         main.rowconfigure(3, weight=0)
         main.rowconfigure(4, weight=0)
         main.rowconfigure(5, weight=1)
-        if self.ad_mode != "premium_no_ads":
+        if IS_MOBILE and self.ad_mode != "premium_no_ads":
             main.rowconfigure(6, weight=0)
         main.rowconfigure(7, weight=0)
 
@@ -7920,7 +5772,7 @@ class DarkPenBoot:
         self._build_buttons(main, 3)
         self._build_progress(main, 4)
         self._build_log(main, 5)
-        if self.ad_mode != "premium_no_ads":
+        if IS_MOBILE and self.ad_mode != "premium_no_ads":
             self._build_ad_banner(main, 6)
         self._build_premium_footer(main, 7)
         self.root.bind('<Configure>', self._on_main_resize, add='+')
@@ -7953,6 +5805,13 @@ class DarkPenBoot:
             frame = tk.Frame(parent, bg=COLORS['bg'])
             frame.grid(row=row, column=0, sticky='ew', pady=(4, 0))
             frame.columnconfigure(0, weight=1)
+            if not IS_MOBILE:
+                donate = self._make_button(
+                    frame, "❤️ DOAR VIA PIX", self._open_donate,
+                    kind="primary", font=('Segoe UI', 10, 'bold'))
+                donate.pack(fill=tk.X, padx=2, pady=2)
+                self._add_tip(donate, "❤️ Apoie o projeto via PIX.")
+                return
             if self.premium_unlocked or self.ad_mode == "premium_no_ads":
                 label = f"⭐ PREMIUM ATIVO — Sem anúncios • Obrigado!"
                 kind = "primary"
@@ -8573,7 +6432,7 @@ class DarkPenBoot:
         txt.configure(yscrollcommand=sb.set)
 
         content = (
-            "🔌 DARKPENBOOT PRO v3.4.0 — GUIA RÁPIDO\n"
+            "🔌 DARKPENBOOT PRO v3.5.0 — GUIA RÁPIDO\n"
             "═══════════════════════════════════════════════\n\n"
             "📌 PASSO A PASSO\n"
             "───────────────────────────────────────────────\n"
@@ -8632,6 +6491,18 @@ class DarkPenBoot:
             "• NixOS tem hashes oficiais em nixos.org\n"
             "• Se divergir, o arquivo vira '.parcial'\n"
             "• Você é avisado antes de usar\n\n"
+            "↺ RESTAURAR CONFIGURAÇÕES\n"
+            "───────────────────────────────────────────────\n"
+            "• Volta tema, FS, esquema, modo e opções\n"
+            "  avançadas ao estado recomendado\n"
+            "• Preserva downloads, logs e licença Premium\n\n"
+            "⚖️ NIXOS E USO DA MARCA\n"
+            "───────────────────────────────────────────────\n"
+            "• NixOS® é marca da NixOS Foundation\n"
+            "• Este projeto não é afiliado, endossado ou\n"
+            "  patrocinado pela NixOS Foundation\n"
+            "• Consulte governança e downloads nos links\n"
+            "  oficiais da aba Fontes\n\n"
             "───────────────────────────────────────────────\n"
             "🌐 GitHub: github.com/Avlis1412\n"
             "👤 Autor: Adriano Rodrigues da Silva\n"
@@ -8800,7 +6671,7 @@ class DarkPenBoot:
             "═══════════════════════════════════════════════\n\n"
             "Adriano Rodrigues da Silva\n"
             "GitHub: github.com/Avlis1412\n"
-            "Projeto: DarkPenBoot Pro v3.4.0\n\n"
+            "Projeto: DarkPenBoot Pro v3.5.0\n\n"
             "═══════════════════════════════════════════════\n"
             "⚖️  AVISO LEGAL\n"
             "═══════════════════════════════════════════════\n\n"
@@ -8881,19 +6752,81 @@ class DarkPenBoot:
         frame.grid(row=row, column=0, sticky='ew', pady=(2, 2))
         frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=1)
         self.start_btn = self._make_button(frame, "💾 GRAVAR",
                                             self._start_operation,
                                             kind="primary",
                                             font=('Segoe UI', 11, 'bold'))
         self.start_btn.grid(row=0, column=0, padx=(0, 3), pady=3, sticky='ew')
         self._add_tip(self.start_btn, "💾 Inicia criação (Ctrl+Enter)")
+        self.reset_btn = self._make_button(
+            frame, "↺ RESTAURAR", self._reset_to_recommended,
+            kind="normal", font=('Segoe UI', 10, 'bold'))
+        self.reset_btn.grid(row=0, column=1, padx=3, pady=3, sticky='ew')
+        self._add_tip(
+            self.reset_btn,
+            "↺ Restaura as configurações para o estado recomendado.\n"
+            "Preserva ISOs, logs, downloads e a licença Premium.")
         self.cancel_btn = self._make_button(frame, "❌ CANCELAR",
                                              self._cancel_operation,
                                              kind="danger",
                                              font=('Segoe UI', 11, 'bold'),
                                              state=tk.DISABLED)
-        self.cancel_btn.grid(row=0, column=1, padx=(3, 0), pady=3, sticky='ew')
+        self.cancel_btn.grid(row=0, column=2, padx=(3, 0), pady=3, sticky='ew')
         self._add_tip(self.cancel_btn, "❌ Cancela gravação (Esc)")
+
+    def _reset_to_recommended(self):
+        if self.is_running or self.download_active:
+            self.log("⚠️ Finalize a operação atual antes de restaurar.",
+                     is_warning=True)
+            return
+        if not self._popup_ask(
+                "Restaurar recomendado",
+                "Restaurar as configurações para o estado recomendado?\n\n"
+                "A ISO selecionada, preferências, tema e opções avançadas\n"
+                "serão limpos. Downloads, logs e licença Premium permanecem."):
+            return
+
+        premium_unlocked = self.premium_unlocked
+        license_key = self.config.get('license_key', '')
+        self.config = dict(DEFAULT_CONFIG)
+        self.config['premium_unlocked'] = premium_unlocked
+        self.config['license_key'] = license_key
+        self.ad_mode = ('premium_no_ads' if premium_unlocked
+                        else self.config['ad_mode'])
+        self.config['ad_mode'] = self.ad_mode
+        self.iso_path = ''
+        self.selected_drive = None
+        save_config(self.config)
+
+        global COLORS
+        COLORS = THEMES[self.config['theme']]
+        self._rebuild_all_widgets()
+        try:
+            self.iso_entry.delete(0, tk.END)
+            self.fs_combo.set(DEFAULT_CONFIG['filesystem'])
+            self.scheme_combo.set(DEFAULT_CONFIG['scheme'])
+            self.mode_combo.current(0)
+            self.quick_var.set(DEFAULT_CONFIG['quick_format'])
+            self.verify_var.set(DEFAULT_CONFIG['verify'])
+            self.hash_algo_combo.set(DEFAULT_CONFIG['hash_algo'])
+            self.log_level_combo.set(DEFAULT_CONFIG['log_level'])
+            self.buffer_combo.set(DEFAULT_CONFIG['buffer_override'])
+            self.chunk_combo.set(DEFAULT_CONFIG['chunk_override'])
+            self.reopen_combo.set(DEFAULT_CONFIG['reopen_attempts'])
+            self.align_combo.set(DEFAULT_CONFIG['align_override'])
+            self.cluster_combo.set(DEFAULT_CONFIG['cluster_override'])
+            self.fsync_var.set(DEFAULT_CONFIG['force_fsync'])
+            self.leave_raw_var.set(DEFAULT_CONFIG['leave_raw_dd'])
+            self.drive_combo.set('')
+            self.distro_combo.current(0)
+            self.windows_combo.current(0)
+            if self._tab_bar is not None:
+                self._tab_bar.select(0, silent=True)
+        except Exception:
+            pass
+        self.log("↺ Configurações restauradas ao estado recomendado.",
+                 is_success=True)
 
     def _build_log(self, parent, row):
         frame = tk.LabelFrame(parent, text=" 📋 Log ",
@@ -8938,7 +6871,8 @@ class DarkPenBoot:
                                 kind="primary", width=70)
         bd.grid(row=0, column=2, padx=1, sticky='ew')
         self._add_tip(bd, "❤️ Doar via PIX")
-        ba = self._make_button(btn_frame, "ℹ️", self._show_about, width=70)
+        ba = self._make_button(btn_frame, "ℹ️ Sobre",
+                    lambda: self._show_about(), width=96)
         ba.grid(row=0, column=3, padx=1, sticky='ew')
         self._add_tip(ba, "ℹ️ Sobre + GitHub + NixOS")
 
@@ -9075,6 +7009,14 @@ class DarkPenBoot:
                   lambda e: cv.configure(scrollregion=cv.bbox('all')))
         bw = cv.create_window((0, 0), window=body, anchor='nw')
         cv.bind('<Configure>', lambda e: cv.itemconfig(bw, width=e.width))
+        def _about_wheel(event):
+            delta = -1 if event.delta > 0 else 1
+            cv.yview_scroll(delta * 3, 'units')
+            return 'break'
+        for widget in (dlg, cv, body):
+            widget.bind('<MouseWheel>', _about_wheel, add='+')
+            widget.bind('<Button-4>', lambda e: cv.yview_scroll(-3, 'units'), add='+')
+            widget.bind('<Button-5>', lambda e: cv.yview_scroll(3, 'units'), add='+')
         desc = (
             "Criador Profissional de Pendrives Bootáveis Universais\n"
             "para Windows, Linux, macOS, Android (Termux) e OTG Mobile.\n\n"
@@ -9102,7 +7044,20 @@ class DarkPenBoot:
             "• Download com CANCELAMENTO e FALLBACK\n"
             "• Buffer adaptativo por tier USB\n"
             "• Navegação por Tab/setas em todos os painéis\n"
-            "• Tooltips em TODOS os controles\n"
+            "• Tooltips em TODOS os controles\n\n"
+            "🟣 NIXOS — ATRIBUIÇÃO E CONFORMIDADE\n"
+            "• NixOS® é marca registrada da NixOS Foundation.\n"
+            "• O DarkPenBoot Pro não é afiliado, endossado\n"
+            "  ou patrocinado pela NixOS Foundation.\n"
+            "• O projeto respeita os links oficiais, licenças\n"
+            "  e regras de governança da comunidade NixOS.\n"
+            "• Governança: nixos.org/governance/\n"
+            "• Constituição: github.com/NixOS/org\n"
+            "• Downloads: nixos.org/download/\n\n"
+            "⚖️ AVISO LEGAL\n"
+            "Este software é fornecido 'como está'. O usuário\n"
+            "é responsável pela ISO, pelo dispositivo alvo\n"
+            "e pelas permissões usadas na gravação.\n"
         )
         tk.Label(body, text=desc, justify=tk.LEFT, anchor='w',
                  fg=colors['fg'], bg=colors['frame_bg'],
@@ -9221,7 +7176,7 @@ class DarkPenBoot:
         dlg.bind('<Escape>',lambda e:dlg.destroy());close.focus_set()
 
     def refresh_drives(self):
-        self._start_global_pulse()
+        self.trigger_reactive_pulse(1, 600)
         try:
             self.log("🔍 Procurando pendrives USB...", is_info=True)
             self.drives = get_usb_drives()
@@ -9245,13 +7200,14 @@ class DarkPenBoot:
                                  f"{sg:.1f} GB")
             self.drive_combo['values'] = items
             self.drive_combo.current(0)
-            self.selected_drive = self.drives[0]
+            self.selected_drive = self.drives[0] if self.drives else None
             self._current_usb_tier = _detect_usb_tier(self.selected_drive)
             self.log(f"✅ {len(self.drives)} pendrive(s) encontrado(s).",
                      is_success=True)
             self.log(f"⚡ Tier USB: {self._current_usb_tier}", is_info=True)
-        finally:
-            self._stop_global_pulse(delay_ms=800)
+        except Exception as e:
+            self.log(f"⚠️ Falha ao atualizar pendrives: {e}",
+                     is_warning=True)
 
     def _manual_select_drive(self):
         if IS_MOBILE:
@@ -9666,11 +7622,13 @@ class DarkPenBoot:
             except Exception:
                 pass
             add_recent_iso(fp)
+            self.trigger_reactive_pulse(2, 800)
             if switch_tab:
-                try:
-                    self._tab_bar.select(1)
-                except Exception:
-                    pass
+                if self._tab_bar is not None:
+                    try:
+                        self._tab_bar.select(1)
+                    except Exception:
+                        pass
         except Exception as e:
             self.log(f"⚠️ Erro ao aplicar ISO: {e}", is_warning=True)
 
@@ -9798,11 +7756,12 @@ class DarkPenBoot:
             self.log("ℹ️ Cancelamento de download abortado.", is_info=True)
             return
         self.download_cancel_requested = True
+        self.trigger_reactive_pulse(3, 800)
         self.log("⏹️ Cancelamento de download solicitado...",
                  is_warning=True)
         try:
             if self._download_cancel_btn is not None:
-                self._download_cancel_btn.config(state=tk.DISABLED)
+                self._download_cancel_btn.set_state(state=tk.DISABLED)
         except Exception:
             pass
 
@@ -9812,7 +7771,7 @@ class DarkPenBoot:
             self.download_cancel_requested = False
         try:
             if self._download_cancel_btn is not None:
-                self._download_cancel_btn.config(
+                self._download_cancel_btn.set_state(
                     state=tk.NORMAL if active else tk.DISABLED)
         except Exception:
             pass
@@ -9822,8 +7781,19 @@ class DarkPenBoot:
             self.log("⚠️ Aguarde a operação atual.", is_warning=True)
             return
         distro = self.distro_combo.get()
+        distro_info = DISTRO_INFO.get(distro, {})
         url = LINUX_DISTROS.get(distro)
         if not url:
+            self.log(f"❌ Distro não encontrada: {distro}", is_error=True)
+            return
+        if not distro_info.get("download_direct", True):
+            page_url = distro_info.get("docs") or distro_info.get("homepage")
+            self.log(
+                f"🌐 {distro} não oferece uma ISO direta nesta versão. "
+                "Abrindo a página oficial de download.",
+                is_info=True)
+            if page_url:
+                webbrowser.open(page_url)
             return
         filename = distro.replace(" ", "_").replace("/", "_") + ".iso"
         destino = DOWNLOAD_DIR / filename
@@ -9858,10 +7828,11 @@ class DarkPenBoot:
         self.log(f"📥 URL: {url}", is_info=True)
         self.is_running = True
         self._set_download_ui(True)
-        self.start_btn.config(state=tk.DISABLED)
-        self.cancel_btn.config(state=tk.DISABLED)
+        self.start_btn.set_state(state=tk.DISABLED)
+        self.cancel_btn.set_state(state=tk.DISABLED)
         self._set_led(COLORS['led_yellow'])
         self._start_global_pulse()
+        self.trigger_reactive_pulse(2, 1400, "⬇️ DOWNLOAD INICIADO")
         try:
             if self.neon_ball is not None:
                 self.neon_ball.set_writing_mode(True)
@@ -9878,8 +7849,8 @@ class DarkPenBoot:
             def finish():
                 self.is_running = False
                 self._set_download_ui(False)
-                self.start_btn.config(state=tk.NORMAL)
-                self.cancel_btn.config(state=tk.DISABLED)
+                self.start_btn.set_state(state=tk.NORMAL)
+                self.cancel_btn.set_state(state=tk.DISABLED)
                 try:
                     if self.neon_ball is not None:
                         self.neon_ball.set_writing_mode(False)
@@ -9941,13 +7912,18 @@ class DarkPenBoot:
                         "Nenhum pendrive foi selecionado!\n\n"
                         "Vá até a aba '🔌 Pendrive', clique em 🔄 para "
                         "atualizar a lista e selecione um dispositivo.")
+                    if self._tab_bar is not None:
+                        try:
+                            self._tab_bar.select(0)
+                        except Exception:
+                            pass
+                    return
+                if self._tab_bar is not None:
                     try:
                         self._tab_bar.select(0)
                     except Exception:
                         pass
-                    return
                 try:
-                    self._tab_bar.select(0)
                     self.start_btn.focus_set()
                 except Exception:
                     pass
@@ -9991,9 +7967,10 @@ class DarkPenBoot:
             self.log("ℹ️ Cancelamento abortado.", is_info=True)
             return
         self.cancel_requested = True
+        self.trigger_reactive_pulse(3, 900, "🛑 CANCELAMENTO ATIVO")
         self.log("⚠️ Cancelamento solicitado — kill em <100ms...",
                  is_warning=True)
-        self.cancel_btn.config(state=tk.DISABLED)
+        self.cancel_btn.set_state(state=tk.DISABLED)
 
     def _start_operation(self):
         if self.is_running:
@@ -10004,6 +7981,7 @@ class DarkPenBoot:
         if not self.iso_path or not os.path.isfile(self.iso_path):
             self._popup_error("Erro", "Selecione uma ISO válida.")
             return
+        self.trigger_reactive_pulse(2, 1200, "⚡ GRAVAÇÃO INICIADA")
         self.log("🔍 Validando ISO antes de prosseguir...", is_info=True)
         ok, err = _validate_iso_pre_flight(self.iso_path, self.log)
         if not ok:
@@ -10111,8 +8089,8 @@ class DarkPenBoot:
         self._operation_start_time = time.time()
         self._operation_iso = self.iso_path
         self._operation_mode = self.mode_combo.get()
-        self.start_btn.config(state=tk.DISABLED)
-        self.cancel_btn.config(state=tk.NORMAL)
+        self.start_btn.set_state(state=tk.DISABLED)
+        self.cancel_btn.set_state(state=tk.NORMAL)
         self._set_led(COLORS['led_yellow'])
         self._start_global_pulse()
         try:
@@ -10131,6 +8109,8 @@ class DarkPenBoot:
         automount_disabled = False
         try:
             drive = self.selected_drive
+            if drive is None:
+                raise RuntimeError("Nenhum pendrive selecionado para a operação.")
             mode = self.mode_combo.get()
             filesystem = self.fs_combo.get()
             scheme = self.scheme_combo.get()
@@ -10307,8 +8287,10 @@ class DarkPenBoot:
             if automount_disabled:
                 _enable_windows_automount(self.log)
             try:
-                if self.neon_ball is not None:
-                    self.root.after(0, lambda: self.neon_ball.set_writing_mode(False))
+                neon_ball = self.neon_ball
+                if neon_ball is not None:
+                    self.root.after(
+                        0, lambda ball=neon_ball: ball.set_writing_mode(False))
             except Exception:
                 pass
             self.root.after(0, lambda s=success: self._finish_operation(s))
@@ -10327,8 +8309,8 @@ class DarkPenBoot:
 
     def _finish_operation(self, success):
         self.is_running = False
-        self.start_btn.config(state=tk.NORMAL)
-        self.cancel_btn.config(state=tk.DISABLED)
+        self.start_btn.set_state(state=tk.NORMAL)
+        self.cancel_btn.set_state(state=tk.DISABLED)
         op_time = datetime.now().strftime("%d/%m/%Y %H:%M")
         status = "Sucesso" if success else "Falha"
         self.config['last_operation'] = f"{status} em {op_time}"
@@ -10339,12 +8321,14 @@ class DarkPenBoot:
             elapsed = _format_eta(dur)
             self._operation_start_time = None
         if success:
+            self.trigger_reactive_pulse(3, 1800, "✅ CONCLUÍDO!")
             self.progress['value'] = 100
             self.percent_label.config(text="100%")
             self.status_label.config(text="✅ Concluído", fg=COLORS['success'])
             self._set_led(COLORS['led_green'])
             self._show_success_summary(elapsed)
         else:
+            self.trigger_reactive_pulse(3, 1400)
             self.progress['value'] = 0
             self.percent_label.config(text="0%")
             self.status_label.config(text="❌ Erro - verifique o log",
@@ -10831,9 +8815,9 @@ class DarkPenBoot:
                              f"{d.get('Model', '?')} - {sg:.1f} GB")
             rec_combo['values'] = items
             rec_combo.current(0)
-            rec_state['drive'] = new_drives[0]
-            rec_state['disk_num'] = new_drives[0].get('DiskNumber', -1)
-            self.selected_drive = new_drives[0]
+            rec_state['drive'] = new_drives[0] if new_drives else None
+            rec_state['disk_num'] = new_drives[0].get('DiskNumber', -1) if new_drives else -1
+            self.selected_drive = new_drives[0] if new_drives else None
             self._current_usb_tier = _detect_usb_tier(new_drives[0])
             _refresh_info_from_state()
             self.log(f"✅ {len(new_drives)} pendrive(s) identificado(s). "
@@ -10858,7 +8842,7 @@ class DarkPenBoot:
                 self.log(f"🎯 Dispositivo alvo alterado: "
                          f"{self.drives[idx].get('Model','?')}", is_info=True)
 
-        ident_btn.config(command=_do_identify)
+        ident_btn.set_state(command=_do_identify)
         self._add_tip(ident_btn,
                       "🔍 Reexecuta a busca por pendrives USB\n"
                       "conectados neste momento.\n\n"
