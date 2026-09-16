@@ -102,3 +102,6 @@ meu-projeto/
 .specify/
 .launcher_profiles/
 meu-projeto/
+
+# Virtualenvs
+venv312/
