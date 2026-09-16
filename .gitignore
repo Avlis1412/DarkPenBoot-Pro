@@ -90,3 +90,15 @@ setup-continue.ps1
 
 # Backups do fix-all
 .fix-backup-*/
+
+# Pastas locais de ferramentas/agentes
+.continue/
+.specify/
+.launcher_profiles/
+meu-projeto/
+
+# Ferramentas locais
+.continue/
+.specify/
+.launcher_profiles/
+meu-projeto/
