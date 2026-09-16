@@ -1305,8 +1305,7 @@ class DarkPenBootKivyApp(App):
             color=self.kivy_color('fg'), font_size=sp(9),
             halign='left', valign='top',
         )
-        self.dl_log.bind(width=lambda *a: self.dl_log.setter('text_size')(
-            self.dl_log.width, None))
+        self.dl_log.bind(width=lambda *a: setattr(self.dl_log, 'text_size', (self.dl_log.width, None)))
         scroll.add_widget(self.dl_log)
         root.add_widget(scroll)
 
@@ -1750,8 +1749,7 @@ class DarkPenBootKivyApp(App):
             markup=False,
         )
         self.log_label.bind(
-            width=lambda *a: self.log_label.setter('text_size')(
-                self.log_label.width, None))
+            width=lambda *a: setattr(self.log_label, 'text_size', (self.log_label.width, None)))
         scroll.add_widget(self.log_label)
         root.add_widget(scroll)
 
@@ -1862,7 +1860,7 @@ class DarkPenBootKivyApp(App):
             font_size=sp(11),
             size_hint_y=None, halign='left', valign='top',
         )
-        lbl.bind(width=lambda *a: lbl.setter('text_size')(lbl.width, None))
+        lbl.bind(width=lambda *a: setattr(lbl, 'text_size', (lbl.width, None)))
         lbl.bind(texture_size=lambda *a: setattr(lbl, 'height',
                                                   lbl.texture_size[1]))
         content.add_widget(lbl)
