@@ -3499,22 +3499,17 @@ def verify_download_sha256(destino: str, distro_key: str,
     return False, "hash divergente"
 
 def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
-    """Retorna lista de URLs a tentar (primária + mirrors oficiais)."""
+    """Retorna somente fontes alternativas verificadas para a mesma ISO."""
     urls = [primary_url]
     if "Ubuntu" in distro_key:
         urls.append(primary_url.replace("releases.ubuntu.com",
                                          "mirrors.kernel.org/ubuntu-releases"))
-    elif "Debian" in distro_key:
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "mirror.ufscar.br/debian-cd"))
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "ftp.fi.debian.org/debian-cd"))
-    elif "Fedora" in distro_key:
-        urls.append(primary_url.replace("download.fedoraproject.org",
-                                         "mirrors.kernel.org/fedora"))
-    elif "Kali" in distro_key:
-        urls.append(primary_url.replace("cdimage.kali.org",
-                                         "mirror.ufscar.br/kali"))
+    elif "Arch" in distro_key:
+        urls.append("https://mirror.ufscar.br/archlinux/iso/latest/"
+                    "archlinux-x86_64.iso")
+    elif "Parrot" in distro_key:
+        urls.append(primary_url.replace("parrot.elhacker.net",
+                                        "deb.parrot.sh/parrot"))
     elif "Mint" in distro_key:
         urls.append(primary_url.replace("mirror.rackspace.com",
                                        "mirrors.kernel.org"))

@@ -3501,28 +3501,25 @@ def verify_download_sha256(destino: str, distro_key: str,
     return False, "hash divergente"
 
 def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
-    """Retorna lista de URLs a tentar (primária + mirrors oficiais)."""
+    """Retorna a fonte oficial e alternativas verificadas para a mesma ISO.
+
+    Espelhos não são intercambiáveis entre distribuições: um host pode espelhar
+    apenas pacotes, uma versão diferente, ou nenhum arquivo ISO. Por isso,
+    esta lista contém somente caminhos validados para os quais a substituição
+    do host preserva o layout do arquivo.
+    """
     urls = [primary_url]
+
     if "Ubuntu" in distro_key:
         urls.append(primary_url.replace("releases.ubuntu.com",
                                          "mirrors.kernel.org/ubuntu-releases"))
-    elif "Debian" in distro_key:
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "mirror.ufscar.br/debian-cd"))
-        urls.append(primary_url.replace("cdimage.debian.org",
-                                         "ftp.fi.debian.org/debian-cd"))
-    elif "Fedora" in distro_key:
-        urls.append(primary_url.replace("download.fedoraproject.org",
-                                         "mirrors.kernel.org/fedora"))
-    elif "Kali" in distro_key:
-        urls.append(primary_url.replace("cdimage.kali.org",
-                                         "mirror.ufscar.br/kali"))
-    elif "Mint" in distro_key:
-        urls.append(primary_url.replace("mirror.rackspace.com",
-                                       "mirrors.kernel.org"))
     elif "Arch" in distro_key:
-        urls.append("https://geo.mirror.pkgbuild.com/iso/latest/"
+        urls.append("https://mirror.ufscar.br/archlinux/iso/latest/"
                     "archlinux-x86_64.iso")
+    elif "Parrot" in distro_key:
+        urls.append(primary_url.replace("parrot.elhacker.net",
+                                        "deb.parrot.sh/parrot"))
+
     seen = set()
     out = []
     for u in urls:
@@ -3530,6 +3527,27 @@ def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
             seen.add(u)
             out.append(u)
     return out
+
+
+def _find_distro_key(url: str, destino: str) -> str:
+    """Identifica a distribuição pela URL oficial ou por um nome ISO único."""
+    for key, info in DISTRO_INFO.items():
+        if info.get("url") == url:
+            return key
+
+    candidates: Dict[str, List[str]] = {}
+    for key, info in DISTRO_INFO.items():
+        source_url = str(info.get("url") or "")
+        filename = source_url.split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
+        if filename.lower().endswith(".iso"):
+            candidates.setdefault(filename.lower(), []).append(key)
+
+    for value in (url, destino):
+        filename = str(value).split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
+        matches = candidates.get(filename.lower(), [])
+        if len(matches) == 1:
+            return matches[0]
+    return ""
 
 def get_remote_size(url: str) -> int:
     if shutil.which('curl'):
@@ -3831,8 +3849,7 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
         methods.append(('wget', download_with_wget))
     methods.append(('urllib', download_with_urllib))
     last_error = None
-    distro_key = next((key for key, info in DISTRO_INFO.items()
-                       if info.get("url") == url), "")
+    distro_key = _find_distro_key(url, destino)
     urls = _get_download_mirrors(distro_key, url) if distro_key else [url]
     for attempt_url in urls:
         if cancel_flag():
