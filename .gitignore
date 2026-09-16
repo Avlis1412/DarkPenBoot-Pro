@@ -81,3 +81,6 @@ env/
 # Arquivo local com credenciais - NUNCA versionar
 setup-continue.ps1
 *.bak_*
+
+setup-continue.ps1
+*.bak_*

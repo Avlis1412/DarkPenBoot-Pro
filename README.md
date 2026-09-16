@@ -42,10 +42,10 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 
 | Metrica | Valor |
 |---------|-------|
-| Arquivos | 50 |
+| Arquivos | 49 |
 | Diretorios | 20 |
-| Linhas totais | 20,195 |
-| Tamanho total | 0.86 MB |
+| Linhas totais | 20,183 |
+| Tamanho total | 0.85 MB |
 | Erros de sintaxe | 0 |
 
 ### Por extensao (top 8 por linhas)
@@ -55,11 +55,11 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 | `.py` | 16 | 14,030 | 595.9 KB |
 | `.md` | 17 | 3,980 | 184.8 KB |
 | `.nix` | 3 | 497 | 24.3 KB |
-| `.ps1` | 3 | 420 | 21.7 KB |
+| `.ps1` | 2 | 401 | 15.8 KB |
 | `.yml` | 2 | 368 | 14.0 KB |
 | `.sh` | 1 | 305 | 12.0 KB |
 | `.toml` | 1 | 240 | 10.6 KB |
-| `(sem ext)` | 2 | 124 | 2.9 KB |
+| `(sem ext)` | 2 | 131 | 3.0 KB |
 
 ### Maiores arquivos
 
