@@ -969,8 +969,8 @@ class DarkPenBootKivyApp(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.config = load_config()
-        self.theme_key = self.config.get('theme', 'soft_dark')
+        self.user_config = load_config()
+        self.theme_key = self.user_config.get('theme', 'soft_dark')
         self._cancel_download = False
         self._download_thread = None
         self._log_lines = []
@@ -1218,8 +1218,8 @@ class DarkPenBootKivyApp(App):
         for key, t in THEMES.items():
             if t['label'] == text:
                 self.theme_key = key
-                self.config['theme'] = key
-                save_config(self.config)
+                self.user_config['theme'] = key
+                save_config(self.user_config)
                 break
 
     def go_to(self, screen_name: str):
@@ -1324,8 +1324,8 @@ class DarkPenBootKivyApp(App):
 
     def _on_distro_change(self, spinner, text):
         self.selected_distro = text
-        self.config['last_distro'] = text
-        save_config(self.config)
+        self.user_config['last_distro'] = text
+        save_config(self.user_config)
 
     def _open_distro_site(self):
         """Abre o site oficial da distro selecionada (v3.6.1)."""
@@ -1359,8 +1359,8 @@ class DarkPenBootKivyApp(App):
         if destino.exists() and os.path.getsize(destino) > MIN_ISO_SIZE:
             self.log(f"âœ… ISO jÃ¡ existe: {destino}", "success")
             self.selected_iso = str(destino)
-            self.config['last_iso'] = str(destino)
-            save_config(self.config)
+            self.user_config['last_iso'] = str(destino)
+            save_config(self.user_config)
             add_recent_iso(str(destino))
             self._show_info("Download", f"ISO jÃ¡ existe:\n{filename}")
             return
@@ -1410,8 +1410,8 @@ class DarkPenBootKivyApp(App):
         if ok:
             self.log(f"âœ… Download concluÃ­do: {destino}", "success")
             self.selected_iso = str(destino)
-            self.config['last_iso'] = str(destino)
-            save_config(self.config)
+            self.user_config['last_iso'] = str(destino)
+            save_config(self.user_config)
             add_recent_iso(str(destino))
             self.download_pb.value = 100
             self.lbl_status.text = "âœ… Download concluÃ­do!"
@@ -1548,8 +1548,8 @@ class DarkPenBootKivyApp(App):
 
     def _select_iso(self, path: str):
         self.selected_iso = path
-        self.config['last_iso'] = path
-        save_config(self.config)
+        self.user_config['last_iso'] = path
+        save_config(self.user_config)
         add_recent_iso(path)
         try:
             size = os.path.getsize(path)
@@ -1966,7 +1966,7 @@ class DarkPenBootKivyApp(App):
     def on_stop(self):
         """Salva config ao sair."""
         try:
-            save_config(self.config)
+            save_config(self.user_config)
         except Exception:
             pass
 
