@@ -81,7 +81,7 @@ IS_OTG_MOBILE = IS_ANDROID or IS_TERMUX or IS_IOS
 GLOBAL_PULSE_STATE = {
     'active': False,
     'phase': 0,
-    'interval_ms': 55,
+    'interval_ms': 80,
     'color_cycle_phase': 0,   # v3.6.0: contador p/ avançar cores
     'color_cycle_index': 0,   # v3.6.0: índice do tema atual no ciclo
 }
@@ -109,7 +109,7 @@ def _trigger_reactive_pulse(intensity: int = 2, duration_ms: int = 1200):
 # 2. CONSTANTES — v3.6.0
 # ==================================================================
 APP_NAME = "DarkPenBoot Pro"
-APP_VERSION = "3.6.0"
+APP_VERSION = "3.6.1"
 APP_AUTHOR = "Adriano Rodrigues da Silva"
 GITHUB_URL = "https://github.com/Avlis1412"
 LOGO_ICON = "🚀"  # v3.6.0: foguete no lugar da tomada
@@ -830,6 +830,33 @@ def _normalize_fs(fs: str) -> str:
         'ext2': 'ext2', 'jhfs+': 'JHFS+', 'hfs+': 'JHFS+', 'apfs': 'APFS',
     }
     return aliases.get(low, s)
+
+def _ensure_linux_mkfs_tools(log_func=None):
+    """Garante que as ferramentas mkfs estejam disponíveis."""
+    needed = {
+        'mkfs.vfat':  ['mkfs.fat', 'mkdosfs', 'dosfstools'],
+        'mkfs.ntfs':  ['mkntfs', 'ntfs-3g'],
+        'mkfs.exfat': ['mkexfatfs', 'exfat-utils', 'exfatprogs'],
+        'mkfs.ext4':  ['mke2fs', 'e2fsprogs'],
+    }
+    missing = []
+    for tool, alts in needed.items():
+        if shutil.which(tool):
+            continue
+        found = False
+        for a in alts:
+            if shutil.which(a):
+                found = True; break
+        if not found:
+            missing.append(f"{tool} (instale: {' ou '.join(alts)})")
+    if missing and log_func:
+        log_func("⚠️ Ferramentas mkfs ausentes:", is_warning=True)
+        for m in missing:
+            log_func(f"   • {m}", is_warning=True)
+        log_func("   💡 sudo apt install dosfstools ntfs-3g "
+                 "exfatprogs e2fsprogs", is_info=True)
+    return missing
+
 
 def _is_fat_like(fs: str) -> bool:
     return _normalize_fs(fs).upper() in ('FAT32', 'EXFAT')
@@ -1985,6 +2012,8 @@ def _format_usb_windows_powershell(drive_info, filesystem, scheme,
 def _format_usb_linux(drive_info, filesystem, scheme, quick,
                       log_func, cancel_flag, volume_label="DARKPENBOOT"):
     device = drive_info['DevicePath']
+    # ── v3.6.1: garante ferramentas mkfs ──
+    _ensure_linux_mkfs_tools(log_func)
     if cancel_flag():
         return None
     subprocess.run(f'umount {device}*', shell=True,
@@ -4405,26 +4434,21 @@ class NeonThemeBall(tk.Canvas):
                 acc_rgb = (0, 255, 65)
                 acc2_rgb = (0, 204, 255)
 
-        n_trail = 6
+        # ── v3.6.1: bolha fina translúcida ──
+        n_trail = 4
         for i in range(n_trail):
             t = i / float(n_trail)
-            trail_r = r_base + 2.0 + i * 2.2
+            trail_r = r_base + 4.0 + i * 3.0
             mix = self._lerp_rgb(acc_rgb, acc2_rgb, t)
-            pulse_off = int(90 * (0.5 + 0.5 * math.sin(
-                (self._phase + i * 2) * math.pi / 8)))
-            r_col = min(255, mix[0] + pulse_off)
-            g_col = min(255, mix[1] + pulse_off)
-            b_col = min(255, mix[2] + pulse_off)
             fade = 1.0 - (i / float(n_trail))
-            r_col = int(r_col * fade + 20 * (1 - fade))
-            g_col = int(g_col * fade + 20 * (1 - fade))
-            b_col = int(b_col * fade + 20 * (1 - fade))
+            r_col = int(mix[0] * fade + 15 * (1 - fade))
+            g_col = int(mix[1] * fade + 15 * (1 - fade))
+            b_col = int(mix[2] * fade + 15 * (1 - fade))
             color = f"#{r_col:02x}{g_col:02x}{b_col:02x}"
             try:
                 self.create_oval(cx - trail_r, cy - trail_r,
                                  cx + trail_r, cy + trail_r,
-                                 outline=color,
-                                 width=max(1, 2 - i // 3))
+                                 outline=color, width=1)
             except Exception:
                 pass
         if reactive_on:
@@ -4526,6 +4550,115 @@ class NeonThemeBall(tk.Canvas):
         super().destroy()
 
 # ==================================================================
+# ==================================================================
+# 17B. HEART PULSE BUTTON — coração multicolor com fundo animado
+# ==================================================================
+class HeartPulseButton(tk.Canvas):
+    def __init__(self, parent, command=None, width=54, height=40, **kw):
+        try:
+            bg = parent.cget('bg')
+        except Exception:
+            bg = COLORS['bg']
+        super().__init__(parent, width=width, height=height,
+                         highlightthickness=0, bg=bg,
+                         takefocus=True, **kw)
+        self._command = command
+        self._width = width
+        self._height = height
+        self._phase = 0
+        self._anim_id = None
+        self._hover = False
+        self._focused = False
+        self._pressed = False
+        self.bind('<Button-1>', self._on_press)
+        self.bind('<ButtonRelease-1>', self._on_release)
+        self.bind('<Enter>', self._on_enter)
+        self.bind('<Leave>', self._on_leave)
+        self.bind('<FocusIn>', self._on_focus_in)
+        self.bind('<FocusOut>', self._on_focus_out)
+        self.bind('<Return>', self._on_key)
+        self.bind('<space>', self._on_key)
+        _PULSE_SUBSCRIBERS.append(self)
+        self._tick()
+
+    def _palette(self):
+        return [
+            COLORS.get('accent', '#ff5252'),
+            COLORS.get('accent2', '#ff79c6'),
+            COLORS.get('info', '#89b4fa'),
+            COLORS.get('success', '#a6e3a1'),
+            COLORS.get('warning', '#f9e2af'),
+        ]
+
+    def _tick(self):
+        try:
+            self._phase = (self._phase + 1) % 64
+            self._draw()
+            self._anim_id = self.after(60, self._tick)
+        except Exception:
+            self._anim_id = None
+
+    def _draw(self):
+        try:
+            self.delete('all')
+        except Exception:
+            return
+        w, h = self._width, self._height
+        cx, cy = w / 2, h / 2
+        palette = self._palette()
+        idx = (self._phase // 12) % len(palette)
+        col = palette[idx]
+        for i in range(6):
+            rr = 14 + i * 2.2 + 3 * abs(3 - (self._phase % 8))
+            self.create_oval(cx - rr, cy - rr, cx + rr, cy + rr,
+                             outline=col, width=1, fill='')
+        size = 10 + int(2 * abs(3 - (self._phase % 8)))
+        if self._pressed:
+            size -= 2
+        self.create_text(cx, cy, text='\u2764\ufe0f',
+                         font=('Segoe UI Emoji', size, 'bold'),
+                         fill=col)
+
+    def _on_press(self, e):
+        self._pressed = True
+        try: self.focus_set()
+        except Exception: pass
+        self._draw()
+
+    def _on_release(self, e):
+        if self._pressed and self._command:
+            self._pressed = False
+            try: self._command()
+            except Exception: pass
+        self._draw()
+
+    def _on_enter(self, e):
+        self._hover = True; self._draw()
+
+    def _on_leave(self, e):
+        self._hover = False; self._draw()
+
+    def _on_focus_in(self, e):
+        self._focused = True; self._draw()
+
+    def _on_focus_out(self, e):
+        self._focused = False; self._draw()
+
+    def _on_key(self, e):
+        if self._command:
+            try: self._command()
+            except Exception: pass
+        return "break"
+
+    def destroy(self):
+        if self._anim_id is not None:
+            try: self.after_cancel(self._anim_id)
+            except Exception: pass
+        try: _PULSE_SUBSCRIBERS.remove(self)
+        except ValueError: pass
+        super().destroy()
+
+
 # 17. ROUNDED BUTTON — v3.6.0
 # ==================================================================
 class RoundedButton(tk.Canvas):
@@ -4649,6 +4782,23 @@ class RoundedButton(tk.Canvas):
                 f"{min(255, max(0, g + offset)):02x}"
                 f"{min(255, max(0, b + offset)):02x}")
 
+    def _glassify(self, hex_color):
+        """Mistura a cor com o fundo para efeito translúcido."""
+        try:
+            h = hex_color.lstrip('#')
+            r = int(h[0:2], 16); g = int(h[2:4], 16); b = int(h[4:6], 16)
+            try:
+                pbg = self.master.cget('bg').lstrip('#')
+                pr = int(pbg[0:2], 16); pg = int(pbg[2:4], 16); pb = int(pbg[4:6], 16)
+            except Exception:
+                pr, pg, pb = 20, 22, 30
+            nr = int(r * 0.65 + pr * 0.35)
+            ng = int(g * 0.65 + pg * 0.35)
+            nb = int(b * 0.65 + pb * 0.35)
+            return f"#{nr:02x}{ng:02x}{nb:02x}"
+        except Exception:
+            return hex_color
+
     def _redraw(self):
         self.delete("all")
         w, h, r = self._width, self._height, self._radius
@@ -4686,6 +4836,14 @@ class RoundedButton(tk.Canvas):
                                 fill='', outline=mid, width=3)
         if (self._focused or self._persistent_focus) and self._enabled:
             phase = self._focus_phase
+            # ── v3.6.1: alto contraste do foco ──
+            try:
+                self.create_polygon(self._rounded_polygon(1, 1, w - 1, h - 1,
+                                                            r - 1),
+                                    smooth=True, splinesteps=24,
+                                    fill='', outline='#ffffff', width=3)
+            except Exception:
+                pass
             halo = self._pulse_color(COLORS.get('accent', '#00ff41'), phase, 160)
             for thick, pad in ((7, 5), (5, 4), (3, 3)):
                 pts = self._rounded_polygon(-pad, -pad, w + pad, h + pad,
@@ -5478,7 +5636,8 @@ class DarkPenBoot:
             self.root.bind('<Control-Shift-Tab>', self._focus_prev_generic)
             self.root.bind('<Control-ISO_Left_Tab>', self._focus_prev_generic)
             for klass in ("TButton", "TCombobox", "TEntry", "TCheckbutton",
-                          "Entry", "Text", "Listbox", "Checkbutton"):
+                          "Entry", "Text", "Listbox", "Checkbutton",
+                          "Canvas", "Frame"):
                 try:
                     self.root.bind_class(klass, "<Tab>", self._focus_next_generic)
                     self.root.bind_class(klass, "<Shift-Tab>",
@@ -6031,37 +6190,52 @@ class DarkPenBoot:
             pass
 
     def _build_premium_footer(self, parent, row):
+        """Rodapé com [💖 Doação] [📱 Mobile] | [❤️ pulsa] [📢 Anúncios]."""
         try:
             frame = tk.Frame(parent, bg=COLORS['bg'])
             frame.grid(row=row, column=0, sticky='ew', pady=(4, 0))
             frame.columnconfigure(0, weight=1)
-            if not IS_MOBILE:
-                donate = self._make_button(
-                    frame, "❤️ DOAR VIA PIX", self._open_donate,
-                    kind="primary", font=('Segoe UI', 10, 'bold'))
-                donate.pack(fill=tk.X, padx=2, pady=2)
-                self._add_tip(donate, "❤️ Apoie o projeto via PIX.")
-                return
-            if self.premium_unlocked or self.ad_mode == "premium_no_ads":
-                label = f"⭐ PREMIUM ATIVO — Sem anúncios • Obrigado!"
-                kind = "primary"
-            else:
-                label = f"⭐ ASSINAR PREMIUM — {PREMIUM_PRICE_BRL} (sem anúncios)"
-                kind = "warning"
-            self._premium_button = self._make_button(
-                frame, label, self._open_premium_checkout,
-                kind=kind, font=('Segoe UI', 10, 'bold'))
-            self._premium_button.pack(fill=tk.X, padx=2, pady=2)
-            self._add_tip(
-                self._premium_button,
-                "⭐ PREMIUM: " + PREMIUM_PRICE_BRL + "\n"
-                "• Sem anúncios\n"
-                "• .exe assinado\n"
-                "• Suporte prioritário\n"
-                "• Atualizações vitalícias\n\n"
-                f"Checkout: {PREMIUM_CHECKOUT_URL}")
-        except Exception:
-            pass
+
+            left = tk.Frame(frame, bg=COLORS['bg'])
+            left.grid(row=0, column=0, sticky='w')
+
+            donate = self._make_button(
+                left, "\U0001f496 DOAR VIA PIX", self._open_donate,
+                kind="primary", font=('Segoe UI', 10, 'bold'))
+            donate.pack(side=tk.LEFT, padx=(2, 4), pady=2)
+            self._add_tip(donate,
+                          "\U0001f496 Botão único de doação via PIX.\n"
+                          "Consolidado v3.6.1.")
+
+            mobile = self._make_button(
+                left, "\U0001f4f1 Versão Mobile (sem Ads)",
+                self._open_mobile_page,
+                kind="normal", font=('Segoe UI', 9, 'bold'))
+            mobile.pack(side=tk.LEFT, padx=4, pady=2)
+            self._add_tip(mobile,
+                          "\U0001f4f1 Versão mobile sem anúncios.")
+
+            right = tk.Frame(frame, bg=COLORS['bg'])
+            right.grid(row=0, column=1, sticky='e')
+
+            self.heart_btn = HeartPulseButton(
+                right,
+                command=self._toggle_favorite,
+                width=54, height=40)
+            self.heart_btn.pack(side=tk.TOP, anchor='e', pady=(0, 3))
+            self._add_tip(self.heart_btn,
+                          "\u2764\ufe0f Favoritar ISO atual.\n"
+                          "Pulsa entre as cores do tema.")
+
+            ads = self._make_button(
+                right, "\U0001f4e2 Anúncios", self._open_ads_settings,
+                kind="normal", width=130,
+                font=('Segoe UI', 9, 'bold'))
+            ads.pack(side=tk.TOP, anchor='e')
+            self._add_tip(ads, "\U0001f4e2 Preferências de anúncios.")
+        except Exception as e:
+            self.log(f"\u26a0\ufe0f Rodapé: {e}", is_warning=True)
+
 
     def _orb_interaction(self, event=None):
         try:
@@ -6403,6 +6577,13 @@ class DarkPenBoot:
         self.distro_combo.grid(row=0, column=1, sticky='ew', padx=4, pady=2)
         b1 = self._make_button(inner, "📥 Baixar", self._download_linux_iso)
         b1.grid(row=0, column=2, padx=2, pady=2)
+        # ── v3.6.1: botão Site Oficial ──
+        b1b = self._make_button(inner, "🌐 Site", self._open_distro_site,
+                                 width=70)
+        b1b.grid(row=0, column=3, padx=2, pady=2)
+        self._add_tip(b1b,
+                      "🌐 Abre o site oficial da distro selecionada.\n"
+                      "Fonte sempre atualizada.")
         self._add_tip(b1,
                       "📥 Baixa a distro Linux com FALLBACK\n"
                       "(curl → wget → urllib) + User-Agent de navegador\n"
@@ -7339,6 +7520,22 @@ class DarkPenBoot:
             close_btn.focus_set()
         except Exception:
             pass
+
+    def _open_distro_site(self):
+        """Abre o site oficial da distro selecionada."""
+        try:
+            distro = self.distro_combo.get()
+            info = DISTRO_INFO.get(distro, {})
+            url = info.get("homepage") or info.get("docs")
+            if not url:
+                self._popup_warning(
+                    "Sem URL",
+                    f"A distro '{distro}' não tem site cadastrado.")
+                return
+            webbrowser.open(url)
+            self.log(f"🌐 Site oficial: {url}", is_success=True)
+        except Exception as e:
+            self.log(f"⚠️ Erro ao abrir site: {e}", is_warning=True)
 
     def _open_donate(self):
         dlg = tk.Toplevel(self.root)
@@ -9753,7 +9950,7 @@ def main():
     except Exception as e:
         try:
             messagebox.showerror("Erro Fatal",
-                                  f"{e}\n\n{traceback.format_exc()}")
+                                f"{e}\n\n{traceback.format_exc()}")
         except Exception:
             print(f"Erro fatal: {e}")
         sys.exit(1)
