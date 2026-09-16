@@ -84,3 +84,6 @@ setup-continue.ps1
 
 setup-continue.ps1
 *.bak_*
+
+# IDE / agente
+.continue/
