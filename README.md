@@ -15,169 +15,102 @@ Windows | Linux | macOS | Android (Termux) | OTG Mobile
 ## Novidades v3.6.1 (2026-09-16)
 
 ### Adicionado
-
-- **Patcher consolidado** — patcher_consolidado_v361.py unifica os 3 antigos
-- **Kivy Android** — patches funcionais aplicados ao frontend Kivy
-- **Varredura shell universal** — `_scan_shell_all_platforms()`
-- **HeartPulseButton** — coração multicolor animado no rodapé
-- **Glassmorphism** em RoundedButton (`_glassify`)
-- **Neon orb bolha fina** translúcida
-- **Botão 🌐 Site** ao lado de cada distro
-- **PgUp/PgDown** em todas as modais
+- Varredura shell universal: `_scan_shell_all_platforms()`
+  - Windows: PowerShell + CIM (`Win32_DiskDrive`)
+  - Linux/macOS: `lsblk -J` + fallback `/dev/sd*`
+  - Termux/Android: `/storage`, `/mnt/media_rw`, `/dev/block/sd*`
+- Constantes visuais v3.6.1: `GUI_TEXTURE_ENABLED`,
+  `ORB_TRANSLUCENCY`, `ORB_GLASS_EDGE`, `LOGO_GLOW_ENABLED`
+- Helpers de cor: `_blend_color`, `_rgb_tuple_to_hex`,
+  `_lighten_hex`, `_darken_hex`
 
 ### Modificado
-
-- `_build_premium_footer()` — HeartPulse + botão Doar único
-- `RoundedButton` — foco alto contraste (#ffffff)
-- `refresh_drives()` — pulso neon + orb oscilando
+- `refresh_drives()` - pulso neon + oscilacao do orb
+- `_do_identify()` - fallback shell se API falhar
+- `_do_diskpart()` - revarredura se perder o alvo
+- `_do_format_via_terminal()` - formata o FS do seletor
+- `ClickableLogo._update_colors()` - glow + shadow
 
 ### Corrigido
-
-- Bug de indentação no patcher (patch do rodapé)
 - `SyntaxError` em `download_with_fallback`
 
 ---
 
-# DarkPenBoot Pro
+## Estatisticas do projeto
 
-**Criador Profissional de Pendrives Bootaveis Universais**
+Gerado automaticamente em 2026-09-16 por `deploy.py`.
 
-Windows | Linux | macOS | Android (Termux) | OTG Mobile
+| Metrica | Valor |
+|---------|-------|
+| Arquivos | 57 |
+| Diretorios | 20 |
+| Linhas totais | 22,239 |
+| Tamanho total | 0.94 MB |
+| Erros de sintaxe | 5 |
 
-![Versao](https://img.shields.io/badge/versao-3.6.1-blue)
-![Python](https://img.shields.io/badge/python-3.8+-yellow)
+### Por extensao (top 8 por linhas)
 
-**Autor:** Adriano Rodrigues da Silva
-**GitHub:** [@Avlis1412](https://github.com/Avlis1412)
+| Ext | Arquivos | Linhas | Tamanho |
+|-----|----------|--------|---------|
+| `.py` | 22 | 16,071 | 686.6 KB |
+| `.md` | 17 | 3,980 | 184.8 KB |
+| `.nix` | 3 | 497 | 24.3 KB |
+| `.ps1` | 3 | 420 | 21.7 KB |
+| `.yml` | 2 | 368 | 14.0 KB |
+| `.sh` | 1 | 305 | 12.0 KB |
+| `.toml` | 1 | 240 | 10.6 KB |
+| `(sem ext)` | 2 | 124 | 2.9 KB |
 
----
+### Maiores arquivos
 
-## Novidades v3.6.1 (2026-09-16)
-
-### Adicionado
-
-- **Varredura shell universal** - `_scan_shell_all_platforms()` detecta pendrives mesmo quando a API falha.
-  - Windows: PowerShell + CIM (Win32_DiskDrive)
-  - Linux/macOS: `lsblk -J` + fallback `/dev/sd*`
-  - Termux/Android: `/storage`, `/mnt/media_rw`, `/dev/block/sd*`
-- **Constantes visuais v3.6.1**:
-  - `GUI_TEXTURE_ENABLED`, `ORB_TRANSLUCENCY`, `ORB_GLASS_EDGE`
-  - `LOGO_GLOW_ENABLED`, `LOGO_SHADOW_ENABLED`
-- **Helpers de cor**:
-  - `_blend_color(rgb, bg_rgb, alpha)`
-  - `_rgb_tuple_to_hex(rgb)`
-  - `_lighten_hex(hex, amount)` / `_darken_hex(hex, amount)`
-
-### Modificado
-
-- `refresh_drives()` - Dispara pulso neon + oscilacao do orb
-- `_do_identify()` - Fallback shell se API falhar
-- `_do_diskpart()` - Revarredura se perder o alvo
-- `_do_format_via_terminal()` - Formata o FS do seletor
-- `ClickableLogo._update_colors()` - Glow + shadow
-
-### Corrigido
-
-- `SyntaxError` em `download_with_fallback` (`fnattempt_url` invalido)
-
-### Estatisticas
-
-| Item | Valor |
-|------|-------|
-| Linhas | ~9.763 |
-| Patches | 7/10 |
-| Python | 3.8+ |
+| Arquivo | Linhas | Tamanho |
+|---------|--------|---------|
+| `DarkPenBoot_PRO1.py` | 9,995 | 439.2 KB |
+| `darkpenboot_kivy.py` | 1,984 | 78.6 KB |
+| `patcher_consolidado_v361.py` | 1,231 | 58.5 KB |
+| `DPB_Launcher.py` | 684 | 30.5 KB |
+| `deploy.py` | 482 | 16.9 KB |
+| `kivy_patcher_v361.py` | 453 | 16.2 KB |
+| `docs\ARQUITETURA.md` | 447 | 17.4 KB |
+| `docs\NIXOS.md` | 421 | 12.7 KB |
+| `CHANGELOG.md` | 387 | 11.7 KB |
+| `.github\skills\speckit-checklist\SKILL.md` | 383 | 22.1 KB |
 
 ---
 
-# DarkPenBoot Pro
+## Recursos
 
-**Criador Profissional de Pendrives Bootaveis Universais**
-
-Windows | Linux | macOS | Android (Termux) | OTG Mobile
-
-![Versao](https://img.shields.io/badge/versao-3.6.1-blue)
-![Python](https://img.shields.io/badge/python-3.8+-yellow)
-
-**Autor:** Adriano Rodrigues da Silva
-**GitHub:** [@Avlis1412](https://github.com/Avlis1412)
-
----
-
-## Novidades v3.6.1 (2026-09-16)
-
-### Adicionado
-
-- **Varredura shell universal** - `_scan_shell_all_platforms()` detecta pendrives mesmo quando a API falha.
-  - Windows: PowerShell + CIM (Win32_DiskDrive)
-  - Linux/macOS: `lsblk -J` + fallback `/dev/sd*`
-  - Termux/Android: `/storage`, `/mnt/media_rw`, `/dev/block/sd*`
-- **Constantes visuais v3.6.1**:
-  - `GUI_TEXTURE_ENABLED`, `ORB_TRANSLUCENCY`, `ORB_GLASS_EDGE`
-  - `LOGO_GLOW_ENABLED`, `LOGO_SHADOW_ENABLED`
-- **Helpers de cor**:
-  - `_blend_color(rgb, bg_rgb, alpha)`
-  - `_rgb_tuple_to_hex(rgb)`
-  - `_lighten_hex(hex, amount)` / `_darken_hex(hex, amount)`
-
-### Modificado
-
-- `refresh_drives()` - Dispara pulso neon + oscilacao do orb
-- `_do_identify()` - Fallback shell se API falhar
-- `_do_diskpart()` - Revarredura se perder o alvo
-- `_do_format_via_terminal()` - Formata o FS do seletor
-- `ClickableLogo._update_colors()` - Glow + shadow
-
-### Corrigido
-
-- `SyntaxError` em `download_with_fallback` (`fnattempt_url` invalido)
-
-### Estatisticas
-
-| Item | Valor |
-|------|-------|
-| Linhas | ~9.763 |
-| Patches | 7/10 |
-| Python | 3.8+ |
+| Recurso | Descricao |
+|---------|-----------|
+| Multi-FS | NTFS, FAT32, exFAT, ext4/3/2, JHFS+, APFS |
+| 7 temas | Matrix, Crimson, Nord, Cyberpunk, Monokai, Light, Soft Dark |
+| ~35 distros | Debian, Ubuntu, Fedora, Arch, NixOS, etc |
+| Hashes | SHA256, SHA512, SHA1, MD5, SHA3-256, BLAKE2b |
+| Downloads | Fallback curl -> wget -> urllib + mirrors |
+| Recuperacao USB | Chkdsk, MBR rebuild, format FS |
+| Mobile | Kivy + Buildozer (Android) |
+| Soft Dark | Tema que reduz fadiga visual |
 
 ---
 
-# 🔌 DARKPENBOOT PRO
+## Como usar
 
-## Criador de Pendrives Bootáveis Multi-Plataforma
-
-[![Version](https://img.shields.io/badge/version-3.5.0-blue?style=for-the-badge)](https://github.com/Avlis1412/DarkPenBoot-Pro/releases)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.9%2B-yellow?style=for-the-badge&logo=python)](https://www.python.org)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-purple?style=for-the-badge)
-[![Build](https://github.com/Avlis1412/DarkPenBoot-Pro/actions/workflows/build.yml/badge.svg)](https://github.com/Avlis1412/DarkPenBoot-Pro/actions/workflows/build.yml)
-
-Crie pendrives bootáveis de forma simples, rápida e segura.
-Suporte a Windows, Linux, macOS, Android e NixOS — tudo em uma ferramenta.
-
-Download • Recursos • Como Usar • NixOS • Build
-
----
-
-## 📥 Download
-
-| Plataforma | Arquivo | Link |
-| :----------: | :-------: | :----: |
-| 🪟 Windows | `DarkPenBoot.exe` | [⬇️ Baixar](https://github.com/Avlis1412/DarkPenBoot-Pro/releases/latest) |
-| 🐧 Linux | `darkpenboot` (binário) | [⬇️ Baixar](https://github.com/Avlis1412/DarkPenBoot-Pro/releases/latest) |
-| 🍏 macOS | `DarkPenBoot` (binário) | [⬇️ Baixar](https://github.com/Avlis1412/DarkPenBoot-Pro/releases/latest) |
-| 📱 Android | `darkpenboot-*.apk` | [⬇️ Baixar](https://github.com/Avlis1412/DarkPenBoot-Pro/releases/latest) |
-
-> 🔐 Cada download vem com arquivo `.sha256` para verificação.
-
-### Verificação SHA256
+### 1. Instalar dependencias
 
 ```bash
-# Linux/macOS
-sha256sum -c darkpenboot.sha256
+pip install -r requirements.txt
+```
 
-# Windows PowerShell
-$esperado = (Get-Content DarkPenBoot.exe.sha256).Split()[0]
-$calculado = (Get-FileHash DarkPenBoot.exe -Algorithm SHA256).Hash
-if ($esperado -eq $calculado) { Write-Host "✅ Hash OK" -ForegroundColor Green }
+### 2. Executar
+
+```bash
+python DarkPenBoot_PRO1.py
+```
+
+### 3. Build e deploy
+
+```bash
+python deploy.py --build      # compila .exe
+python deploy.py --push       # commit + push
+python deploy.py --all        # tudo
 ```
