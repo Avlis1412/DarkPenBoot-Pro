@@ -1,46 +1,61 @@
-[app]
+﻿# ==============================================================
+# Fix Android build - pyjnius version
+# ==============================================================
+$ErrorActionPreference = "Stop"
 
-title = DarkPenBoot Pro
-package.name = darkpenboot
-package.domain = org.avlis1412
+$specPath = "buildozer.spec"
 
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json,txt,md,spec
-source.exclude_patterns = tests,*.pyc,__pycache__,.git,build,dist,.venv,bin,.buildozer
+if (-not (Test-Path $specPath)) {
+    Write-Host "[ERR] buildozer.spec nao encontrado" -ForegroundColor Red
+    exit 1
+}
 
-version = 3.5.0
+# Backup
+$ts = (Get-Date).ToString("yyyyMMdd_HHmmss")
+Copy-Item $specPath "$specPath.bak_$ts" -Force
+Write-Host "[OK] Backup: $specPath.bak_$ts" -ForegroundColor Green
 
-# ─── Dependências Python ─────────────────────────────────────────────
-# NOTA: não incluímos pyinstaller (é para desktop)
-requirements = python3,kivy==2.3.0,requests,urllib3,certifi
+# Le o conteudo
+$content = Get-Content $specPath -Raw -Encoding UTF8
 
-# ─── Configurações Android ───────────────────────────────────────────
-orientation = portrait
-fullscreen = 0
+# Substitui a linha de requirements
+$oldReq = 'requirements = python3,kivy==2.3.0,pyjnius==1.5.0,requests,urllib3,certifi'
+$newReq = 'requirements = python3,kivy==2.3.0,pyjnius==1.5.0,requests,urllib3,certifi'
 
-# ─── Permissões ──────────────────────────────────────────────────────
-# INTERNET: para downloads
-# WRITE_EXTERNAL_STORAGE: para salvar ISOs em /sdcard
-# READ_EXTERNAL_STORAGE: para listar ISOs existentes
-android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
+if ($content -match [regex]::Escape($oldReq)) {
+    $content = $content.Replace($oldReq, $newReq)
+    Write-Host "[OK] requirements atualizado:" -ForegroundColor Green
+    Write-Host "     ANTES: $oldReq" -ForegroundColor DarkGray
+    Write-Host "     DEPOIS: $newReq" -ForegroundColor Green
+} elseif ($content -match 'requirements\s*=.*pyjnius') {
+    Write-Host "[INFO] pyjnius ja esta no requirements" -ForegroundColor Cyan
+} else {
+    # Fallback: regex generica
+    $content = $content -replace 'requirements\s*=\s*[^\r\n]+', $newReq
+    Write-Host "[OK] requirements atualizado via regex" -ForegroundColor Green
+}
 
-# ─── SDK ─────────────────────────────────────────────────────────────
-android.api = 33
-android.minapi = 21
-android.ndk = 25b
-android.sdk = 33
-android.accept_sdk_license = True
+# Bump da versao para 3.6.1 (opcional mas recomendado)
+$content = $content -replace 'version\s*=\s*3\.5\.0', 'version = 3.6.1'
+Write-Host "[OK] version: 3.5.0 -> 3.6.1" -ForegroundColor Green
 
-# ─── Arquiteturas ────────────────────────────────────────────────────
-android.archs = arm64-v8a, armeabi-v7a
+# Salva
+Set-Content -Path $specPath -Value $content -Encoding UTF8 -NoNewline
+Write-Host "[OK] $specPath salvo" -ForegroundColor Green
 
-# ─── Ícone (opcional) ────────────────────────────────────────────────
-# icon.filename = %(source.dir)s/assets/icon.png
-# presplash.filename = %(source.dir)s/assets/splash.png
+# Mostra a linha final
+Write-Host ""
+Write-Host "Linha final:" -ForegroundColor Cyan
+Select-String "requirements" $specPath | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
 
-# ─── Log ─────────────────────────────────────────────────────────────
-log_level = 2
+# Commit + push
+Write-Host ""
+Write-Host "Fazendo commit + push..." -ForegroundColor Cyan
+git add $specPath
+git commit -m "fix(android): fixa pyjnius==1.5.0 e bump version 3.6.1"
+git push origin main
 
-[buildozer]
-log_level = 2
-warn_on_root = 1
+Write-Host ""
+Write-Host ("=" * 62) -ForegroundColor Green
+Write-Host "  OK - Correcao enviada! GitHub Actions vai rebuildar" -ForegroundColor Green
+Write-Host ("=" * 62) -ForegroundColor Green
