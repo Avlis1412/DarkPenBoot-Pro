@@ -59,4 +59,21 @@ logs/
 *.iso
 *.img
 *.parcial
-*.html_error
+*.html_error# Backups locais
+*_BACKUP_*.py
+*.bak
+
+# Diagnóstico / patchers temporários
+diag.py
+python patcher_fix_p4p7.py
+patcher_fix_p4p7.py
+
+# Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Virtual envs
+kivy_venv/
+venv/
+env/

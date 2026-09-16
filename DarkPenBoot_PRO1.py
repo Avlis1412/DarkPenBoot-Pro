@@ -688,6 +688,43 @@ PIX_RECEIVER_NAME = "ADRIANO RODRIGUES DA SILVA"
 PIX_BANK_NAME = "Santander"
 PIX_ACCOUNT_INFO = "Agência 3449 • C/C 01081019-8"
 
+GUI_TEXTURE_ENABLED  = True
+GUI_TEXTURE_STEP     = 26
+GUI_TEXTURE_ALPHA    = 0.08
+ORB_TRANSLUCENCY     = 0.78
+ORB_GLASS_EDGE       = True
+LOGO_GLOW_ENABLED    = True
+LOGO_SHADOW_ENABLED  = True
+
+
+def _blend_color(rgb, bg_rgb, alpha):
+    alpha = max(0.0, min(1.0, float(alpha)))
+    return tuple(
+        int(c * alpha + b * (1.0 - alpha))
+        for c, b in zip(rgb, bg_rgb)
+    )
+
+
+def _rgb_tuple_to_hex(rgb) -> str:
+    r, g, b = (max(0, min(255, int(c))) for c in rgb)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _lighten_hex(hex_color: str, amount: int = 20) -> str:
+    try:
+        r, g, b = _theme_rgb(hex_color)
+        return _rgb_tuple_to_hex((r + amount, g + amount, b + amount))
+    except Exception:
+        return hex_color
+
+
+def _darken_hex(hex_color: str, amount: int = 20) -> str:
+    try:
+        r, g, b = _theme_rgb(hex_color)
+        return _rgb_tuple_to_hex((r - amount, g - amount, b - amount))
+    except Exception:
+        return hex_color
+
 DONATE_MESSAGE = (
     "Obrigado pelo interesse em apoiar o projeto! 🙏\n\n"
     "O DarkPenBoot Pro é desenvolvido de forma independente e\n"
@@ -1602,6 +1639,74 @@ def _get_usb_drives_mac() -> List[Dict]:
         except Exception:
             continue
     return drives
+
+def _scan_shell_all_platforms(log_func=None) -> list:
+    """v3.6.1 - Varredura universal via shell."""
+    found = []
+    if IS_WINDOWS:
+        try:
+            ps = "Get-CimInstance Win32_DiskDrive | "
+            ps += "Where-Object { $_.InterfaceType -eq 'USB' } | "
+            ps += "Select-Object Index,Model,Size,InterfaceType,"
+            ps += "SerialNumber,PNPDeviceID | ConvertTo-Json -Compress"
+            r = run_hidden(["powershell", "-NoProfile", "-Command", ps],
+                           timeout=30)
+            if r.returncode == 0 and r.stdout.strip():
+                import json as _j
+                data = _j.loads(r.stdout)
+                if not isinstance(data, list):
+                    data = [data]
+                for d in data:
+                    found.append({
+                        "DiskNumber": d.get("Index"),
+                        "Model": (d.get("Model") or "?").strip(),
+                        "Size": int(d.get("Size") or 0),
+                        "Letters": "",
+                        "BusType": "USB",
+                        "DevicePath": "\\\\.\\PhysicalDrive" + str(d.get("Index")),
+                        "SerialNumber": (d.get("SerialNumber") or "").strip(),
+                        "PNPDeviceID": (d.get("PNPDeviceID") or "").strip(),
+                    })
+        except Exception:
+            pass
+    elif IS_LINUX or IS_TERMUX or IS_ANDROID:
+        try:
+            cmd = "lsblk -J -o NAME,TYPE,SIZE,MODEL,TRAN,SERIAL,RM 2>/dev/null"
+            r = run_hidden(["sh", "-c", cmd], timeout=15)
+            if r.returncode == 0 and r.stdout.strip():
+                import json as _j
+                data = _j.loads(r.stdout)
+                for dev in data.get("blockdevices", []):
+                    if dev.get("type") != "disk":
+                        continue
+                    name = dev.get("name", "")
+                    if not name:
+                        continue
+                    is_usb = (str(dev.get("tran") or "").lower() == "usb"
+                              or dev.get("rm") in (True, "1", 1))
+                    if not is_usb:
+                        continue
+                    try:
+                        size = _parse_size(str(dev.get("size", "0")))
+                    except Exception:
+                        size = 0
+                    found.append({
+                        "DiskNumber": name,
+                        "Model": (dev.get("model") or "Unknown USB").strip(),
+                        "Size": size,
+                        "Letters": "",
+                        "BusType": "USB",
+                        "DevicePath": "/dev/" + name,
+                        "SerialNumber": (dev.get("serial") or "").strip(),
+                        "PNPDeviceID": "",
+                    })
+        except Exception:
+            pass
+    if log_func:
+        log_func("Varredura shell: " + str(len(found)) + " dispositivo(s).",
+                 is_info=True)
+    return found
+
 
 def get_disk_number_by_letter(letter: str) -> int:
     if not IS_WINDOWS:
@@ -3901,9 +4006,6 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
                             cancel_flag, log_func)
                     
                 except TypeError:
-                    
-                    ok = fnattempt_url, destino
-                except TypeError:
                     ok = fn(attempt_url, destino, progress_cb, cancel_flag)
                 if cancel_flag():
                     return False
@@ -5181,12 +5283,18 @@ class ClickableLogo(tk.Frame):
     def _update_colors(self):
         if GLOBAL_PULSE_STATE['active']:
             base = COLORS['accent']
-            c1 = self._pulse(base, 220)
-            c2 = self._pulse(COLORS['accent2'], 200)
+            c1 = self._pulse(base, 240)
+            c2 = self._pulse(COLORS['accent2'], 220)
+            try:
+                c_glow = _lighten_hex(c1, 30)
+                c_shadow = _darken_hex(c2, 40)
+            except Exception:
+                c_glow = c1
+                c_shadow = c2
             self._icon_lbl.configure(fg=c1)
-            self._text_lbl.configure(fg=c1)
+            self._text_lbl.configure(fg=c_glow)
             self._ver_lbl.configure(fg=c2)
-            self._hint_lbl.configure(fg=c2)
+            self._hint_lbl.configure(fg=c_shadow)
         elif self._hover or self._focused:
             c = self._pulse(COLORS['accent'], 160)
             self._icon_lbl.configure(fg=c)
@@ -7301,38 +7409,33 @@ class DarkPenBoot:
         body.bind('<Next>',  _pgdn_donate, add='+')
 
     def refresh_drives(self):
-        # v3.6.0: sem pulso (não é tarefa real)
+        # v3.6.1: pulso neon + orb oscilando
+        self._start_global_pulse()
+        self.trigger_reactive_pulse(2, 1100, "ATUALIZANDO PENDRIVES...")
         try:
-            self.log("🔍 Procurando pendrives USB...", is_info=True)
+            self.log("Procurando pendrives USB...", is_info=True)
             self.drives = get_usb_drives()
             if not self.drives:
-                self.drive_combo['values'] = ["❌ Nenhum pendrive detectado"]
+                self.drive_combo["values"] = ["Nenhum pendrive detectado"]
                 self.drive_combo.set("")
-                self.log("⚠️ Nenhum pendrive encontrado.", is_warning=True)
-                if IS_IOS:
-                    self.log("📱 iOS: verifique o adaptador OTG.", is_info=True)
-                elif IS_ANDROID or IS_TERMUX:
-                    self.log("📱 OTG: verifique o cabo e o ROOT.", is_info=True)
+                self.log("Nenhum pendrive encontrado.", is_warning=True)
                 return
             items = []
             for d in self.drives:
-                sg = d['Size'] / (1024**3) if d['Size'] > 0 else 0
-                if d.get('Letters'):
-                    items.append(f"🔌 Disco {d['DiskNumber']} ({d['Letters']}:) - "
-                                 f"{d['Model']} - {sg:.1f} GB")
-                else:
-                    items.append(f"🔌 Disco {d['DiskNumber']} - {d['Model']} - "
-                                 f"{sg:.1f} GB")
-            self.drive_combo['values'] = items
+                sg = d["Size"] / (1024**3) if d["Size"] > 0 else 0
+                items.append("Disco " + str(d["DiskNumber"]) + " - "
+                             + str(d["Model"]) + " - "
+                             + str(round(sg, 1)) + " GB")
+            self.drive_combo["values"] = items
             self.drive_combo.current(0)
             self.selected_drive = self.drives[0] if self.drives else None
             self._current_usb_tier = _detect_usb_tier(self.selected_drive)
-            self.log(f"✅ {len(self.drives)} pendrive(s) encontrado(s).",
-                     is_success=True)
-            self.log(f"⚡ Tier USB: {self._current_usb_tier}", is_info=True)
+            self.log(str(len(self.drives)) + " pendrive(s).", is_success=True)
         except Exception as e:
-            self.log(f"⚠️ Falha ao atualizar pendrives: {e}",
-                     is_warning=True)
+            self.log("Falha: " + str(e), is_warning=True)
+        finally:
+            self._stop_global_pulse(delay_ms=1500)
+
 
     def _manual_select_drive(self):
         if IS_MOBILE:
@@ -9045,41 +9148,45 @@ class DarkPenBoot:
                 pass
 
         def _do_identify():
-            self.log("🔍 Identificando pendrives USB...", is_info=True)
+            self.log("[1/2] Identificando via API...", is_info=True)
             try:
                 new_drives = get_usb_drives()
             except Exception as e:
-                self.log(f"❌ Erro na identificação: {e}", is_error=True)
+                self.log("Erro API: " + str(e), is_error=True)
                 new_drives = []
             if not new_drives:
-                rec_combo['values'] = ["❌ Nenhum pendrive detectado"]
+                self.log("[2/2] Varredura shell universal...", is_info=True)
+                try:
+                    new_drives = _scan_shell_all_platforms(self.log)
+                except Exception as e:
+                    self.log("Falha shell scan: " + str(e), is_warning=True)
+                    new_drives = []
+            if not new_drives:
+                rec_combo["values"] = ["Nenhum pendrive detectado"]
                 rec_combo.set("")
-                self.log("⚠️ Nenhum pendrive encontrado.", is_warning=True)
+                self.log("Nenhum pendrive encontrado.", is_warning=True)
                 return
             self.drives = new_drives
             items = []
             for d in new_drives:
-                sg = d.get('Size', 0) / (1024**3) if d.get('Size', 0) else 0
-                letters = d.get('Letters') or ''
-                suffix = f" ({letters}:)" if letters else ''
-                items.append(f"🔌 Disco {d.get('DiskNumber')}{suffix} - "
-                             f"{d.get('Model', '?')} - {sg:.1f} GB")
-            rec_combo['values'] = items
+                sg = d.get("Size", 0) / (1024**3) if d.get("Size", 0) else 0
+                items.append("Disco " + str(d.get("DiskNumber")) + " - "
+                             + str(d.get("Model", "?")) + " - "
+                             + str(round(sg, 1)) + " GB")
+            rec_combo["values"] = items
             rec_combo.current(0)
-            rec_state['drive'] = new_drives[0] if new_drives else None
-            rec_state['disk_num'] = new_drives[0].get('DiskNumber', -1) if new_drives else -1
-            self.selected_drive = new_drives[0] if new_drives else None
+            rec_state["drive"] = new_drives[0]
+            rec_state["disk_num"] = new_drives[0].get("DiskNumber", -1)
+            self.selected_drive = new_drives[0]
             self._current_usb_tier = _detect_usb_tier(new_drives[0])
             _refresh_info_from_state()
-            self.log(f"✅ {len(new_drives)} pendrive(s) identificado(s). "
-                     f"Selecionado: {new_drives[0].get('Model','?')}",
-                     is_success=True)
+            self.log(str(len(new_drives)) + " dispositivo(s).", is_success=True)
             try:
-                if hasattr(self, 'drive_combo'):
-                    self.drive_combo['values'] = items
-                    self.drive_combo.current(0)
+                self.drive_combo["values"] = items
+                self.drive_combo.current(0)
             except Exception:
                 pass
+
 
         def _on_local_combo_change(event=None):
             idx = rec_combo.current()
@@ -9354,55 +9461,82 @@ class DarkPenBoot:
             btn_row.columnconfigure(i, weight=1)
 
         def _do_format_via_terminal():
-            d = rec_state['drive']
-            dn = rec_state['disk_num']
-            fs = recov_fs_combo.get()
-            letters = d.get('Letters', '') or ''
+            """v3.6.1 - Formata o pendrive ALVO no FS do seletor."""
+            d = rec_state["drive"]
+            dn = rec_state["disk_num"]
+            fs = recov_fs_combo.get().upper()
+            if not d:
+                self._popup_warning("Sem alvo", "Clique em Identificar.")
+                return
+            if dn is None or dn == -1:
+                hits = _scan_shell_all_platforms(self.log)
+                if hits:
+                    rec_state["drive"] = hits[0]
+                    rec_state["disk_num"] = hits[0].get("DiskNumber", -1)
+                    dn = rec_state["disk_num"]
+                    d = rec_state["drive"]
+            model = str(d.get("Model", "?"))
+            msg = ("Formatar Disco " + str(dn) + " (" + model + ")"
+                   + " como " + fs + "? Dados serao APAGADOS.")
+            ok = UltimatePopup.ask(dlg, "Formatar como " + fs, msg,
+                                    kind="warning",
+                                    buttons=("Sim, formatar", "Cancelar"))
+            if not ok:
+                return
             if IS_WINDOWS:
-                if fs.upper() in ('NTFS', 'FAT32', 'EXFAT'):
-                    if not letters:
-                        script = (f"select disk {dn}\n"
-                                  "attributes disk clear readonly\n"
-                                  "clean\n"
-                                  "create partition primary\n"
-                                  "select partition 1\n"
-                                  f"format fs={fs.upper()} quick label=PENBOOT\n"
-                                  "assign\n"
-                                  "exit\n")
-                        sp = CONFIG_DIR / f"_format_rec_{os.getpid()}_{int(time.time()*1000)}.txt"
-                        try:
-                            with open(sp, 'w', encoding='ascii', newline='\r\n') as f:
-                                f.write(script)
-                            rr = run_hidden(['diskpart', '/s', str(sp)], timeout=300)
-                            if rr.returncode == 0:
-                                self.log("✅ Volume criado, formatado.",
-                                         is_success=True)
-                            else:
-                                self.log("❌ DiskPart falhou.", is_error=True)
-                        finally:
-                            try: sp.unlink(missing_ok=True)
-                            except Exception: pass
-                        return
-                    letter = letters.split(',')[0].strip().rstrip(':')
-                    cmd = f'format {letter}: /FS:{fs.upper()} /Q /Y'
-                    _launch_terminal(cmd, shell='cmd')
-                else:
-                    self._popup_info(
-                        "FS não nativo",
-                        f"O FS '{fs}' não é nativo do Windows.\n\n"
-                        f"• Use WSL: sudo mkfs.{fs.lower()} /dev/sdX\n"
-                        f"• Use Linux/Ubuntu Live")
-            else:
-                dev = d.get('DevicePath', '')
-                if not dev:
+                if dn is None or dn == -1 or dn == 0:
+                    self._popup_error("Bloqueado", "Disco invalido.")
                     return
-                fs_map = {'NTFS': 'ntfs', 'FAT32': 'vfat', 'EXFAT': 'exfat',
-                          'EXT4': 'ext4', 'EXT3': 'ext3', 'EXT2': 'ext2',
-                          'JHFS+': 'hfs+', 'APFS': 'apfs'}
-                mkfs_fs = fs_map.get(fs.upper(), fs.lower())
-                cmd = (f'sudo umount {dev}* 2>/dev/null; '
-                       f'sudo mkfs.{mkfs_fs} {dev}1')
-                _launch_terminal(cmd, shell='bash')
+                if fs not in ("NTFS", "FAT32", "EXFAT"):
+                    self._popup_info("FS nao nativo",
+                        fs + " nao e nativo do Windows.")
+                    return
+                lines = ["select disk " + str(dn),
+                         "attributes disk clear readonly",
+                         "clean",
+                         "create partition primary",
+                         "select partition 1",
+                         "format fs=" + fs + " quick label=PENBOOT",
+                         "assign",
+                         "exit"]
+                sp = CONFIG_DIR / ("_fmt_" + str(os.getpid()) + ".txt")
+                try:
+                    with open(sp, "w", encoding="ascii",
+                              newline="\r\n") as f:
+                        f.write("\n".join(lines))
+                    self.log("Formatando Disco " + str(dn) + " como "
+                             + fs + "...", is_info=True)
+                    rr = run_hidden(["diskpart", "/s", str(sp)], timeout=600)
+                    if rr.returncode == 0:
+                        self.log("Formatado como " + fs + ".", is_success=True)
+                        self._popup_success("OK",
+                            "Disco " + str(dn) + " formatado como " + fs)
+                        try:
+                            self.refresh_drives()
+                        except Exception:
+                            pass
+                    else:
+                        self.log("DiskPart erro.", is_error=True)
+                finally:
+                    try:
+                        sp.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+            else:
+                dev = d.get("DevicePath", "")
+                if not dev or not os.path.exists(dev):
+                    self._popup_warning("Invalido", "Caminho: " + dev)
+                    return
+                fs_map = {"NTFS": "ntfs", "FAT32": "vfat", "EXFAT": "exfat",
+                          "EXT4": "ext4", "EXT3": "ext3", "EXT2": "ext2"}
+                mkfs_fs = fs_map.get(fs, fs.lower())
+                part = dev + "1" if not dev[-1:].isdigit() else dev
+                cmd = ("sudo umount " + dev + "* 2>/dev/null; "
+                       "sudo mkfs." + mkfs_fs + " -F -L PENBOOT " + part
+                       + "; sudo sync")
+                _launch_terminal(cmd, shell="bash")
+
+
         b_fmt = self._make_button(btn_row, "📁 Formatar com FS",
                                    _recovery_op_wrap("Formatar FS",
                                                       _do_format_via_terminal),
@@ -9411,21 +9545,29 @@ class DarkPenBoot:
         self._add_tip(b_fmt, "📁 Formata o pendrive com o FS escolhido.")
 
         def _do_diskpart():
-            d = rec_state['drive']
-            dn = rec_state['disk_num']
+            d = rec_state["drive"]
+            dn = rec_state["disk_num"]
+            if not d:
+                self._popup_warning("Sem alvo",
+                    "Clique em Identificar primeiro.")
+                return
+            if dn is None or dn == -1:
+                hits = _scan_shell_all_platforms(self.log)
+                if hits:
+                    self.drives = hits
+                    rec_state["drive"] = hits[0]
+                    rec_state["disk_num"] = hits[0].get("DiskNumber", -1)
+                    self.selected_drive = hits[0]
+                    _refresh_info_from_state()
+                    dn = rec_state["disk_num"]
+                    d = rec_state["drive"]
             if IS_WINDOWS:
-                _launch_terminal(
-                    f'echo Disco alvo: {dn} - '
-                    f'{d.get("Model", "?")} & echo. & diskpart',
-                    shell='cmd')
+                _launch_terminal("diskpart", shell="cmd")
             else:
-                dev = d.get('DevicePath', '')
-                _launch_terminal(f'sudo parted {dev}', shell='bash')
-        b_dp = self._make_button(btn_row, "💻 Diskpart / Parted",
-                                  _recovery_op_wrap("Diskpart", _do_diskpart),
-                                  kind="normal")
-        b_dp.grid(row=0, column=1, padx=3, pady=2, sticky='ew')
-        self._add_tip(b_dp, "💻 Abre o diskpart (Windows) ou parted (Linux).")
+                dev = d.get("DevicePath", "")
+                if dev:
+                    _launch_terminal("sudo parted " + dev, shell="bash")
+
 
         term_card = tk.LabelFrame(
             body, text=" 🖥️ Terminal Personalizado ",
