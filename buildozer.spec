@@ -1,3 +1,4 @@
+$spec = @'
 [app]
 # ─────────────────────────────────────────────────────────────────
 # Identidade do App
@@ -22,46 +23,32 @@ version = 3.6.1
 # Dependências Python
 # python3      → interpretador (obrigatório)
 # kivy         → framework UI (versão fixa)
-# pyjnius      → ponte Java/Android (obrigatório para USB, permissões)
+# pyjnius      → ponte Java/Android (p4a injeta automaticamente)
 # requests     → HTTP
 # urllib3      → backend do requests
 # certifi      → certificados SSL
 # ─────────────────────────────────────────────────────────────────
-requirements = python3,kivy==2.3.0,pyjnius==1.5.0,requests,urllib3,certifi
+requirements = python3,kivy==2.3.0,requests,urllib3,certifi
 
 # ─────────────────────────────────────────────────────────────────
 # Interface
 # ─────────────────────────────────────────────────────────────────
 orientation = portrait
 fullscreen = 0
-# Não usar fullscreen=1 se quiser ver barra de status
 
 # ─────────────────────────────────────────────────────────────────
-# Ícone e Splash (descomente quando tiver os arquivos)
+# Ícone e Splash
 # ─────────────────────────────────────────────────────────────────
 # icon.filename = %(source.dir)s/assets/icon.png
 # presplash.filename = %(source.dir)s/assets/splash.png
 
 # ─────────────────────────────────────────────────────────────────
 # Permissões Android
-# INTERNET                → download de ISOs
-# WRITE_EXTERNAL_STORAGE  → gravar ISOs e bootáveis
-# READ_EXTERNAL_STORAGE   → ler ISOs existentes
-# MANAGE_EXTERNAL_STORAGE → gerenciar arquivos (Android 11+)
-# USB_PERMISSION          → detectar pendrive OTG ★ CRÍTICO ★
-# WAKE_LOCK               → manter CPU acordada durante operações
-# FOREGROUND_SERVICE      → rodar em background (Android 8+)
-# ACCESS_NETWORK_STATE    → verificar conexão
-# ACCESS_WIFI_STATE       → info de rede
 # ─────────────────────────────────────────────────────────────────
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE,USB_PERMISSION,WAKE_LOCK,FOREGROUND_SERVICE,ACCESS_NETWORK_STATE,ACCESS_WIFI_STATE
 
 # ─────────────────────────────────────────────────────────────────
 # SDK/NDK
-# android.api = target do Android (33 = Android 13)
-# android.minapi = mínimo suportado (21 = Android 5.0)
-# android.ndk = versão do NDK (25b é estável)
-# android.sdk NÃO é mais usado (depreciado) — removido
 # ─────────────────────────────────────────────────────────────────
 android.api = 33
 android.minapi = 21
@@ -70,20 +57,18 @@ android.accept_sdk_license = True
 
 # ─────────────────────────────────────────────────────────────────
 # Arquiteturas
-# arm64-v8a   → celulares modernos (2017+)
-# armeabi-v7a → celulares antigos (2013+)
 # ─────────────────────────────────────────────────────────────────
 android.archs = arm64-v8a, armeabi-v7a
 
 # ─────────────────────────────────────────────────────────────────
-# Opções extras do Android
+# Opções extras
 # ─────────────────────────────────────────────────────────────────
 android.allow_backup = True
 android.wakelock = True
 android.entrypoint = org.kivy.android.PythonActivity
 
 # ─────────────────────────────────────────────────────────────────
-# python-for-android (versão estável fixa)
+# python-for-android
 # ─────────────────────────────────────────────────────────────────
 p4a.branch = develop
 
@@ -96,3 +81,19 @@ warn_on_root = 1
 [buildozer]
 log_level = 2
 warn_on_root = 1
+'@
+
+# Salva SEM BOM
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText("$PWD\buildozer.spec", $spec, $utf8NoBom)
+
+Write-Host ""
+Write-Host "[OK] buildozer.spec atualizado (sem BOM)" -ForegroundColor Green
+Write-Host ""
+
+# Confere
+$bytes = [System.IO.File]::ReadAllBytes("buildozer.spec")
+Write-Host "Primeiros bytes: $($bytes[0..2] -join ',')  (esperado: 91,97,112)" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Linha de requirements:" -ForegroundColor Cyan
+Select-String "^requirements" buildozer.spec | ForEach-Object { Write-Host "  $_" }
