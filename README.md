@@ -44,7 +44,7 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 |---------|-------|
 | Arquivos | 49 |
 | Diretorios | 20 |
-| Linhas totais | 20,183 |
+| Linhas totais | 20,186 |
 | Tamanho total | 0.85 MB |
 | Erros de sintaxe | 0 |
 
@@ -59,7 +59,7 @@ Gerado automaticamente em 2026-09-16 por `deploy.py`.
 | `.yml` | 2 | 368 | 14.0 KB |
 | `.sh` | 1 | 305 | 12.0 KB |
 | `.toml` | 1 | 240 | 10.6 KB |
-| `(sem ext)` | 2 | 131 | 3.0 KB |
+| `(sem ext)` | 2 | 134 | 3.1 KB |
 
 ### Maiores arquivos
 
