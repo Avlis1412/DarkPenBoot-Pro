@@ -1,3 +1,36 @@
+# Changelog - DarkPenBoot Pro
+
+Todas as mudancas notaveis deste projeto sao documentadas aqui.
+
+Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [3.6.1] - 2026-09-16
+
+### Adicionado
+
+- `_scan_shell_all_platforms()` - Varredura universal via shell
+  - Windows: PowerShell + CIM (Win32_DiskDrive)
+- Constantes visuais v3.6.1: `GUI_TEXTURE_ENABLED`,
+  `ORB_TRANSLUCENCY`, `ORB_GLASS_EDGE`, `LOGO_GLOW_ENABLED`
+- Helpers: `_blend_color`, `_rgb_tuple_to_hex`,
+  `_lighten_hex`, `_darken_hex`
+
+### Modificado
+
+- `refresh_drives()` - Dispara pulso neon + oscilacao do orb
+- `_do_identify()` - Fallback shell se API falhar
+- `_do_diskpart()` - Revarredura se perder o alvo
+- `_do_format_via_terminal()` - Formata o FS do seletor
+- `ClickableLogo._update_colors()` - Glow + shadow
+
+### Corrigido
+
+- `SyntaxError` em `download_with_fallback`
+
+---
+
 # 📋 Changelog — DarkPenBoot Pro
 
 Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.

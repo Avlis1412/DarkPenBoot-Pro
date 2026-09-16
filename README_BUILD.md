@@ -1,3 +1,7 @@
+# Build - DarkPenBoot Pro v3.6.1
+
+> Atualizado em 2026-09-16
+
 # 🏗️ Guia de Build — DarkPenBoot Pro
 
 Este documento explica **como gerar os executáveis** do DarkPenBoot Pro
