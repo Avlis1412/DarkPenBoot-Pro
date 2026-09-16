@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 DarkPenBoot Pro - Analise + README + Build + Deploy
@@ -403,7 +403,6 @@ def write_readme(root, new_content):
     old = ""
     if p.exists():
         old = p.read_text(encoding="utf-8", errors="ignore")
-        backup(p)
     m = re.search(r"##\s+.*Vers[oõ]es\s+Anteriores.*", old, re.IGNORECASE)
     if m:
         final = new_content + "\n\n---\n\n" + old[m.start():]

@@ -1,4 +1,4 @@
-# ═══════════════════════════════════════════════════════════════════════════
+﻿# ═══════════════════════════════════════════════════════════════════════════
 # DARKPENBOOT PRO — GitHub Actions — Build Multi-Plataforma
 # ═══════════════════════════════════════════════════════════════════════════
 #
@@ -193,55 +193,53 @@ jobs:
   # JOB 4 — BUILD ANDROID (.apk via Kivy + Buildozer)
   # ═══════════════════════════════════════════════════════════════════════
   build-android:
-    name: 📱 Build Android (.apk)
-    runs-on: ubuntu-latest
-    continue-on-error: true
+    name: Build Android (apk)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
     steps:
-      - name: 📥 Checkout do código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 🔍 Verificar se há versão Kivy
-        id: check_kivy
-        run: |
-          if [ -f "darkpenboot_kivy.py" ] && [ -f "buildozer.spec" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "✅ Versão Kivy encontrada"
-          elif [ -f "main.py" ] && [ -f "buildozer.spec" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "✅ main.py encontrado"
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Versão Kivy não encontrada — pulando Android"
-          fi
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-      - name: 🐍 Setup Python
-        if: steps.check_kivy.outputs.found == 'true'
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
-      - name: 📦 Instalar Buildozer
-        if: steps.check_kivy.outputs.found == 'true'
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk \
-            python3-pip autoconf libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 cmake \
-            libffi-dev libssl-dev
-          pip install --user buildozer cython
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          sudo apt-get install -y \
+            build-essential git zip unzip autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev automake libltdl-dev
 
-      - name: 🏗️ Gerar APK
-        if: steps.check_kivy.outputs.found == 'true'
+      - name: Install Buildozer
         run: |
-          echo "📱 Build Android via Buildozer..."
-          buildozer android debug
-        timeout-minutes: 60
+          python -m pip install --upgrade pip wheel setuptools
+          pip install --upgrade "cython<3" buildozer
 
-      - name: 📤 Upload APK
-        if: steps.check_kivy.outputs.found == 'true'
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-${{ runner.os }}-
+
+      - name: Build APK
+        run: |
+          yes | buildozer -v android debug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DarkPenBoot-Android
+          name: darkpenboot-android
           path: bin/*.apk
-          retention-days: 30
+          if-no-files-found: error

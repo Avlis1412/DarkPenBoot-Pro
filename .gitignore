@@ -87,3 +87,6 @@ setup-continue.ps1
 
 # IDE / agente
 .continue/
+
+# Backups do fix-all
+.fix-backup-*/
