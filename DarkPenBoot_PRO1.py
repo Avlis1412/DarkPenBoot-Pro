@@ -3,31 +3,24 @@
 # pyright: reportRedeclaration=false
 r"""
 ╔══════════════════════════════════════════════════════════════════════════╗
-║       DARKPENBOOT PRO v3.5.0 - CRIADOR DE PENDRIVES BOOTÁVEIS            ║
+║       DARKPENBOOT PRO v3.6.0 - CRIADOR DE PENDRIVES BOOTÁVEIS            ║
 ║                                                                          ║
 ║  Autor: Adriano Rodrigues da Silva                                       ║
 ║  GitHub: https://github.com/Avlis1412                                    ║
 ║  Plataforma: Windows | Linux | macOS | Android (Termux) | OTG Mobile     ║
 ║                                                                          ║
-║  v3.4.0 — NOVO (preservando tudo das versões anteriores):                ║
-║   ✅ Tema 🌙 Soft Dark (reduz cansaço visual)                            ║
-║   ✅ NixOS 24.11 + 25.05 com GOVERNANÇA e DOWNLOAD oficiais              ║
-║   ✅ Aba 📚 Fontes com créditos, licenças e trademark NixOS              ║
-║   ✅ Botão PREMIUM (R$ 10) com checkout                                  ║
-║   ✅ Verificação SHA256 automática pós-download                          ║
-║   ✅ Hyperlink NixOS na janela Sobre (atribuição legal)                  ║
+║  v3.6.0 — NOVO (todas as versões anteriores preservadas):                ║
+║   ✅ Logo 🚀 (foguete) em vez de 🔌 (tomada)                             ║
+║   ✅ PgUp/PgDown navegam em TODAS as janelas modais                      ║
+║   ✅ Lista EXPANDIDA de ~35 distros com links oficiais                   ║
+║   ✅ Pulso Neon SÓ ativa em tarefas reais (gravar/baixar/limpar)         ║
+║   ✅ Orb 3D OSCILA por todas as cores dos temas quando ativado           ║
+║   ✅ Tema geral da UI permanece ESTÁVEL durante oscilação                ║
 ║                                                                          ║
-║  v3.3.0 (mantido):                                                       ║
-║   ✅ PULSO NEON GLOBAL + ORB 3D com rastro                               ║
-║   ✅ LOGO CLICÁVEL + Aba 📖 AJUDA + Seletor Extract vs RAW               ║
-║                                                                          ║
-║  v3.2.0 (mantido):                                                       ║
-║   ✅ DD não deixa mais o pendrive em RAW/sumido                          ║
-║   ✅ Painel Recuperação: botão Identificar + Combobox                    ║
-║                                                                          ║
-║  AVISO LEGAL: NixOS® é marca registrada da NixOS Foundation.             ║
-║  Este software NÃO é afiliado, endossado ou patrocinado pela             ║
-║  NixOS Foundation.                                                        ║
+║  AVISO LEGAL: Este software é propriedade exclusiva de                   ║
+║  Adriano Rodrigues da Silva. Todos os direitos reservados.               ║
+║  As ISOs Linux são de código aberto e o Windows é redirecionado          ║
+║  para os canais oficiais da Microsoft.                                   ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -83,12 +76,14 @@ IS_MOBILE = IS_ANDROID or IS_TERMUX or IS_IOS
 IS_OTG_MOBILE = IS_ANDROID or IS_TERMUX or IS_IOS
 
 # ==================================================================
-# 1B. ESTADO GLOBAL DE PULSO NEON (v3.3.0)
+# 1B. ESTADO GLOBAL DE PULSO NEON (v3.6.0 — com ciclo de cores)
 # ==================================================================
 GLOBAL_PULSE_STATE = {
     'active': False,
     'phase': 0,
     'interval_ms': 55,
+    'color_cycle_phase': 0,   # v3.6.0: contador p/ avançar cores
+    'color_cycle_index': 0,   # v3.6.0: índice do tema atual no ciclo
 }
 _PULSE_SUBSCRIBERS: list = []
 
@@ -111,55 +106,76 @@ def _trigger_reactive_pulse(intensity: int = 2, duration_ms: int = 1200):
     REACTIVE_PULSE_STATE['phase'] = 0
 
 # ==================================================================
-# 2. CONSTANTES
+# 2. CONSTANTES — v3.6.0
 # ==================================================================
 APP_NAME = "DarkPenBoot Pro"
-APP_VERSION = "3.5.0"
+APP_VERSION = "3.6.0"
 APP_AUTHOR = "Adriano Rodrigues da Silva"
 GITHUB_URL = "https://github.com/Avlis1412"
+LOGO_ICON = "🚀"  # v3.6.0: foguete no lugar da tomada
 
-# ⭐ v3.4.0 — PREMIUM
 PREMIUM_CHECKOUT_URL = (
     "https://github.com/Avlis1412/DarkPenBoot-Pro#premium"
 )
 PREMIUM_PRICE_BRL = "R$ 10,00"
 PREMIUM_EXE_PLACEHOLDER = (
     "https://github.com/Avlis1412/DarkPenBoot-Pro/releases/download/"
-    "v3.4.0/DarkPenBoot_Premium.exe"
+    "v3.6.0/DarkPenBoot_Premium.exe"
 )
 
-# ⭐ v3.4.0 — NixOS URLs OFICIAIS
 NIXOS_URL = "https://nixos.org"
-NIXOS_GOVERNANCE_URL = "https://nixos.org/governance/"
 NIXOS_DOWNLOAD_URL = "https://nixos.org/download/"
-NIXOS_FOUNDATION_URL = "https://nixos.org/community/teams/foundation-board"
-NIXOS_STEERING_URL = "https://nixos.org/community/teams/steering-committee"
-NIXOS_CONSTITUTION_URL = (
-    "https://github.com/NixOS/org/blob/main/doc/constitution.md"
-)
 NIXOS_RELEASES_URL = "https://releases.nixos.org/"
 NIXOS_MANUAL_URL = "https://nixos.org/manual/nixos/stable/"
 
-# ⭐ Aviso legal — Trademark NixOS
-NIXOS_TRADEMARK_NOTICE = (
-    "NixOS® é uma marca registrada da NixOS Foundation "
-    "(Stichting NixOS Foundation), organização sem fins lucrativos na Holanda.\n\n"
-    "O DarkPenBoot Pro NÃO é afiliado, endossado ou patrocinado pela "
-    "NixOS Foundation. A menção honrosa se dá pelo uso da filosofia "
-    "declarativa em nosso projeto e pelo respeito à comunidade NixOS.\n\n"
-    "• Governança: nixos.org/governance/\n"
-    "• Download oficial: nixos.org/download/\n"
-    "• Constituição: github.com/NixOS/org\n\n"
-    "Licenças dos componentes NixOS:\n"
-    "• Nixpkgs: MIT\n"
-    "• Nix: LGPL-2.1\n"
-    "• Logo NixOS: CC BY 4.0\n"
-    "• Documentação: CC BY-SA 4.0"
+GENERAL_LEGAL_NOTICE = (
+    "⚖️  AVISO LEGAL E DISTRIBUIÇÃO DE ISOS\n"
+    "═══════════════════════════════════════════════\n\n"
+    "Este software (DarkPenBoot Pro) é propriedade exclusiva\n"
+    "de Adriano Rodrigues da Silva. Todos os direitos reservados.\n\n"
+    "🐧 DISTROS LINUX (CÓDIGO ABERTO):\n"
+    "As imagens ISO de sistemas operacionais Linux listadas\n"
+    "são distribuídas sob suas respectivas licenças de código\n"
+    "aberto (GPL-2.0, GPL-3.0, MIT, BSD, AGPL-3.0, etc.).\n"
+    "O DarkPenBoot Pro apenas fornece links oficiais para\n"
+    "download, respeitando os termos de cada distribuição.\n\n"
+    "🪟 MICROSOFT WINDOWS:\n"
+    "Para o Windows, o aplicativo direciona EXCLUSIVAMENTE\n"
+    "para os canais oficiais da Microsoft para download de\n"
+    "ISOs. Nenhuma ISO da Microsoft é distribuída diretamente\n"
+    "pelo aplicativo — apenas links oficiais são fornecidos.\n\n"
+    "⚖️  RESPONSABILIDADE:\n"
+    "O uso deste software é de inteira responsabilidade do\n"
+    "usuário. O autor não se responsabiliza por danos a\n"
+    "dispositivos ou perda de dados.\n"
+)
+
+LICENSE_REGISTRATION_NOTICE = (
+    "📜 REGISTRO DE LICENÇA DE USO\n"
+    "═══════════════════════════════════════════════\n\n"
+    f"Software: {APP_NAME}\n"
+    f"Versão:   {APP_VERSION}\n"
+    f"Autor:    {APP_AUTHOR}\n"
+    "Ano:      2026\n"
+    "Registro: Boas Práticas de Desenvolvimento de Software\n\n"
+    "───────────────────────────────────────────────\n"
+    "TERMOS DE LICENÇA\n"
+    "───────────────────────────────────────────────\n"
+    "• Uso Pessoal: PERMITIDO\n"
+    "• Uso Comercial: PERMITIDO\n"
+    "• Redistribuição: PROIBIDA sem autorização expressa\n"
+    "• Modificação: PROIBIDA sem autorização expressa\n"
+    "• Venda: PROIBIDA sem autorização expressa\n\n"
+    "───────────────────────────────────────────────\n"
+    "O uso deste software está licenciado ao usuário sob\n"
+    "os termos de boas práticas de software, conforme\n"
+    "registrado em nome do autor.\n"
+    "═══════════════════════════════════════════════"
 )
 
 AD_MODE = ("mobile_ads" if IS_MOBILE else "desktop_no_ads")
 AD_BANNER_TEXT = (
-    f"📢  v3.4.0 — Soft Dark + NixOS Governance + SHA256  •  "
+    f"📢  v3.6.0 — Soft Dark + SHA256  •  "
     f"PREMIUM {PREMIUM_PRICE_BRL} sem anúncios  •  github.com/Avlis1412  📢"
 )
 AD_BANNER_COLORS = ("#facc15", "#1f2937")
@@ -332,7 +348,6 @@ THEMES = {
         "led_off": "#d1d5db", "led_green": "#059669",
         "led_yellow": "#d97706", "led_red": "#dc2626",
     },
-    # ⭐ v3.4.0: Tema Soft Dark — reduz fadiga visual
     "soft_dark": {
         "label": "🌙 Soft Dark",
         "bg": "#1e1e24", "fg": "#cdd6f4",
@@ -399,215 +414,245 @@ def _label_from_key(key: str) -> str:
     return THEMES.get(key, THEMES["matrix"])["label"]
 
 # ==================================================================
-# 4. DISTROS E URLs — v3.4.0 (Fontes oficiais + Docs + Licenças + SHA256)
+# 4. DISTROS EXPANDIDAS — v3.6.0 (~35 distros com links oficiais)
 # ==================================================================
 DISTRO_INFO = {
-    # ─── PARROT OS ───
+    # ═══════════ BASE DEBIAN & UBUNTU ═══════════
+    "Debian 12 NetInst": {
+        "url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso",
+        "docs": "https://www.debian.org/distrib/",
+        "license": "DFSG-compliant (GPL, MIT, BSD)",
+        "sha256": "", "homepage": "https://www.debian.org", "family": "Debian",
+    },
+    "Debian 12 DVD": {
+        "url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd/debian-12.7.0-amd64-DVD-1.iso",
+        "docs": "https://www.debian.org/distrib/",
+        "license": "DFSG-compliant", "sha256": "",
+        "homepage": "https://www.debian.org", "family": "Debian",
+    },
+    "Ubuntu 24.04 Desktop": {
+        "url": "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso",
+        "docs": "https://ubuntu.com/download/desktop",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://ubuntu.com", "family": "Ubuntu",
+    },
+    "Ubuntu 24.04 Server": {
+        "url": "https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso",
+        "docs": "https://ubuntu.com/download/server",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://ubuntu.com", "family": "Ubuntu",
+    },
+    "Linux Mint 22 Cinnamon": {
+        "url": "https://mirror.rackspace.com/linuxmint/iso/stable/22/linuxmint-22-cinnamon-64bit.iso",
+        "docs": "https://linuxmint.com/download.php",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://linuxmint.com", "family": "Ubuntu",
+    },
+    "Pop!_OS 22.04 LTS": {
+        "url": "https://iso.pop-os.org/22.04/amd64/intel/58/pop-os_22.04_amd64_intel_58.iso",
+        "docs": "https://pop.system76.com/",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://pop.system76.com", "family": "Ubuntu",
+    },
+    "Zorin OS 17 Core": {
+        "url": "https://mirrors.edge.kernel.org/zorinos/17/Zorin-OS-17-Core-64-bit.iso",
+        "docs": "https://zorin.com/os/download/",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://zorin.com", "family": "Ubuntu",
+    },
+    "elementary OS 7": {
+        "url": "https://ams3.dl.elementary.io/download/MTcwMDAwMDAwMA==/elementaryos-7.1-stable.20231201.iso",
+        "docs": "https://elementary.io/",
+        "license": "GPL-3.0 + LGPL", "sha256": "",
+        "homepage": "https://elementary.io", "family": "Ubuntu",
+    },
+    "Kali Linux 2024.3": {
+        "url": "https://cdimage.kali.org/kali-2024.3/kali-linux-2024.3-installer-amd64.iso",
+        "docs": "https://www.kali.org/get-kali/",
+        "license": "GPL-3.0 (Debian derivative)", "sha256": "",
+        "homepage": "https://www.kali.org", "family": "Debian",
+    },
     "Parrot OS 7.3 Home": {
         "url": "https://parrot.elhacker.net/iso/7.3/Parrot-home-7.3_amd64.iso",
         "docs": "https://parrotsec.org/download/",
-        "license": "GPL-3.0 (Debian derivative)",
-        "sha256": "",
-        "homepage": "https://parrotsec.org",
-        "foundation": "Parrot Security Team",
+        "license": "GPL-3.0 (Debian derivative)", "sha256": "",
+        "homepage": "https://parrotsec.org", "family": "Debian",
     },
     "Parrot OS 7.3 Security": {
         "url": "https://parrot.elhacker.net/iso/7.3/Parrot-security-7.3_amd64.iso",
         "docs": "https://parrotsec.org/download/",
-        "license": "GPL-3.0 (Debian derivative)",
-        "sha256": "",
-        "homepage": "https://parrotsec.org",
-        "foundation": "Parrot Security Team",
+        "license": "GPL-3.0 (Debian derivative)", "sha256": "",
+        "homepage": "https://parrotsec.org", "family": "Debian",
     },
-    # ─── KALI LINUX ───
-    "Kali Linux 2024.1": {
-        "url": "https://old.kali.org/kali-images/kali-2024.1/kali-linux-2024.1-installer-amd64.iso",
-        "docs": "https://www.kali.org/get-kali/",
-        "license": "GPL-3.0 (Debian derivative)",
-        "sha256": "",
-        "homepage": "https://www.kali.org",
-        "foundation": "Offensive Security",
+    "Tails 6": {
+        "url": "https://tails.net/install/",
+        "download_direct": False,
+        "docs": "https://tails.net/install/",
+        "license": "GPL-3.0", "sha256": "",
+        "homepage": "https://tails.net", "family": "Debian",
     },
-    # ─── UBUNTU ───
-    "Ubuntu 24.04 LTS": {
-        "url": "https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-desktop-amd64.iso",
-        "docs": "https://ubuntu.com/download/desktop",
-        "license": "GPL-3.0",
-        "sha256": "",
-        "homepage": "https://ubuntu.com",
-        "foundation": "Canonical Ltd.",
+    # ═══════════ BASE RED HAT & ENTERPRISE ═══════════
+    "Fedora 40 Workstation": {
+        "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso",
+        "docs": "https://fedoraproject.org/workstation/download",
+        "license": "GPL-2.0 + MIT + Apache 2.0", "sha256": "",
+        "homepage": "https://fedoraproject.org", "family": "Red Hat",
     },
-    "Ubuntu Server 24.04 LTS": {
-        "url": "https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso",
-        "docs": "https://ubuntu.com/download/server",
-        "license": "GPL-3.0",
-        "sha256": "",
-        "homepage": "https://ubuntu.com",
-        "foundation": "Canonical Ltd.",
+    "Fedora 40 Server": {
+        "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Server/x86_64/iso/Fedora-Server-dvd-x86_64-40-1.14.iso",
+        "docs": "https://fedoraproject.org/server/download",
+        "license": "GPL-2.0 + MIT + Apache 2.0", "sha256": "",
+        "homepage": "https://fedoraproject.org", "family": "Red Hat",
     },
-    # ─── DEBIAN ───
-    "Debian 12.5 NetInst": {
-        "url": "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso",
-        "docs": "https://www.debian.org/CD/http-ftp/",
-        "license": "DFSG-compliant (GPL, MIT, BSD, etc.)",
-        "sha256": "",
-        "homepage": "https://www.debian.org",
-        "foundation": "Debian Project / SPI",
+    "AlmaLinux 9": {
+        "url": "https://repo.almalinux.org/almalinux/9.4/isos/x86_64/AlmaLinux-9.4-x86_64-dvd.iso",
+        "docs": "https://almalinux.org/get-almalinux/",
+        "license": "GPL-2.0 + BSD", "sha256": "",
+        "homepage": "https://almalinux.org", "family": "Red Hat",
     },
-    # ─── FEDORA ───
-    "Fedora Workstation 39": {
-        "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/39/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-39-1.5.iso",
-        "docs": "https://fedoraproject.org/workstation/download/",
-        "license": "GPL-2.0 + MIT + Apache 2.0",
-        "sha256": "",
-        "homepage": "https://fedoraproject.org",
-        "foundation": "Fedora Project / Red Hat",
+    "Rocky Linux 9": {
+        "url": "https://download.rockylinux.org/pub/rocky/9.4/isos/x86_64/Rocky-9.4-x86_64-dvd.iso",
+        "docs": "https://rockylinux.org/download",
+        "license": "GPL-2.0 + BSD", "sha256": "",
+        "homepage": "https://rockylinux.org", "family": "Red Hat",
     },
-    # ─── LINUX MINT ───
-    "Linux Mint 21.3": {
-        "url": "https://mirror.rackspace.com/linuxmint/iso/stable/21.3/linuxmint-21.3-cinnamon-64bit.iso",
-        "docs": "https://linuxmint.com/download.php",
-        "license": "GPL-3.0",
-        "sha256": "",
-        "homepage": "https://linuxmint.com",
-        "foundation": "Linux Mint Team",
+    "CentOS Stream 9": {
+        "url": "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso",
+        "docs": "https://www.centos.org/download/",
+        "license": "GPL-2.0", "sha256": "",
+        "homepage": "https://www.centos.org", "family": "Red Hat",
     },
-    # ─── POP!_OS ───
-    "Pop!_OS 22.04 LTS": {
-        "url": "https://iso.pop-os.org/22.04/amd64/intel/58/pop-os_22.04_amd64_intel_58.iso",
-        "docs": "https://pop.system76.com/",
-        "license": "GPL-3.0",
-        "sha256": "",
-        "homepage": "https://pop.system76.com",
-        "foundation": "System76",
+    "RHEL 9 Developer": {
+        "url": "https://developers.redhat.com/products/rhel/download",
+        "download_direct": False,
+        "docs": "https://developers.redhat.com/products/rhel/download",
+        "license": "Red Hat Subscription (Developer free)", "sha256": "",
+        "homepage": "https://www.redhat.com", "family": "Red Hat",
     },
-    # ─── MANJARO ───
-    "Manjaro KDE 23.1": {
-        "url": "https://download.manjaro.org/kde/23.1.0/manjaro-kde-23.1.0-231216-linux66.iso",
-        "docs": "https://manjaro.org/download/",
-        "license": "GPL-3.0 (Arch-based)",
-        "sha256": "",
-        "homepage": "https://manjaro.org",
-        "foundation": "Manjaro GmbH & Co. KG",
-    },
-    # ─── openSUSE ───
-    "openSUSE Leap 15.5": {
-        "url": "https://download.opensuse.org/distribution/leap/15.5/iso/openSUSE-Leap-15.5-DVD-x86_64-Media.iso",
-        "docs": "https://get.opensuse.org/leap/",
-        "license": "GPL-2.0 / GPL-3.0",
-        "sha256": "",
-        "homepage": "https://www.opensuse.org",
-        "foundation": "openSUSE Project / SUSE",
-    },
-    # ─── ARCH LINUX ───
-    "Arch Linux 2024.03.01": {
+    # ═══════════ BASE ARCH ═══════════
+    "Arch Linux": {
         "url": "https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso",
         "docs": "https://archlinux.org/download/",
-        "license": "GPL-2.0 e similares",
-        "sha256": "",
-        "homepage": "https://archlinux.org",
-        "foundation": "Arch Linux Team",
+        "license": "GPL-2.0 e similares", "sha256": "",
+        "homepage": "https://archlinux.org", "family": "Arch",
     },
-    # ─── ZORIN OS ───
-    "Zorin OS 17 Core": {
-        "url": "https://mirrors.edge.kernel.org/zorinos/17/Zorin-OS-17-Core-64-bit.iso",
-        "docs": "https://zorin.com/os/download/",
-        "license": "GPL-3.0",
-        "sha256": "",
-        "homepage": "https://zorin.com",
-        "foundation": "Zorin Group",
+    "Manjaro KDE": {
+        "url": "https://download.manjaro.org/kde/24.0.0/manjaro-kde-24.0.0-240514-linux68.iso",
+        "docs": "https://manjaro.org/download/",
+        "license": "GPL-3.0 (Arch-based)", "sha256": "",
+        "homepage": "https://manjaro.org", "family": "Arch",
     },
-    # ─── PROXMOX ───
-    "Proxmox VE 8.1": {
-        "url": "https://www.proxmox.com/en/downloads/proxmox-virtual-environment",
+    "EndeavourOS": {
+        "url": "https://mirror.albony.xyz/endeavouros/iso/EndeavourOS_Endeavour-2024.06.25.iso",
+        "docs": "https://endeavouros.com/latest-release/",
+        "license": "GPL-3.0 (Arch-based)", "sha256": "",
+        "homepage": "https://endeavouros.com", "family": "Arch",
+    },
+    "Garuda Linux": {
+        "url": "https://garudalinux.org/downloads",
         "download_direct": False,
-        "docs": "https://pve.proxmox.com/wiki/Main_Page",
-        "license": "AGPL-3.0",
-        "sha256": "",
-        "homepage": "https://www.proxmox.com",
-        "foundation": "Proxmox Server Solutions GmbH",
+        "docs": "https://garudalinux.org/downloads",
+        "license": "GPL-3.0 (Arch-based)", "sha256": "",
+        "homepage": "https://garudalinux.org", "family": "Arch",
     },
-    # ─── TRUENAS ───
-    "TrueNAS SCALE": {
-        "url": "https://download.truenas.com/TrueNAS-SCALE-ElectricEel/24.10.0.2/TrueNAS-SCALE-24.10.0.2.iso",
-        "download_direct": True,
-        "docs": "https://www.truenas.com/docs/",
-        "license": "BSD-2-Clause",
-        "sha256": "",
-        "homepage": "https://www.truenas.com",
-        "foundation": "iXsystems",
+    # ═══════════ BASE SUSE ═══════════
+    "openSUSE Leap 15.6": {
+        "url": "https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-DVD-x86_64-Media.iso",
+        "docs": "https://get.opensuse.org/leap/",
+        "license": "GPL-2.0 / GPL-3.0", "sha256": "",
+        "homepage": "https://www.opensuse.org", "family": "SUSE",
     },
-    # ⭐ NixOS 24.11 "Vicuña" (lançado 30/11/2024)
+    "openSUSE Tumbleweed": {
+        "url": "https://download.opensuse.org/tumbleweed/iso/openSUSE-Tumbleweed-DVD-x86_64-Current.iso",
+        "docs": "https://get.opensuse.org/tumbleweed/",
+        "license": "GPL-2.0 / GPL-3.0", "sha256": "",
+        "homepage": "https://www.opensuse.org", "family": "SUSE",
+    },
+    # ═══════════ INDEPENDENTES / DECLARATIVAS / SERVIDORES ═══════════
     "NixOS 24.11 GNOME": {
         "url": "https://releases.nixos.org/nixos/24.11/latest-nixos-gnome-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
     },
     "NixOS 24.11 KDE Plasma": {
         "url": "https://releases.nixos.org/nixos/24.11/latest-nixos-plasma6-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
     },
     "NixOS 24.11 Minimal": {
         "url": "https://releases.nixos.org/nixos/24.11/latest-nixos-minimal-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
     },
-    # ⭐ NixOS 25.05 (mais recente)
     "NixOS 25.05 GNOME": {
         "url": "https://releases.nixos.org/nixos/25.05/latest-nixos-gnome-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
     },
     "NixOS 25.05 KDE Plasma": {
         "url": "https://releases.nixos.org/nixos/25.05/latest-nixos-plasma6-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
     },
     "NixOS 25.05 Minimal": {
         "url": "https://releases.nixos.org/nixos/25.05/latest-nixos-minimal-x86_64-linux.iso",
         "docs": NIXOS_DOWNLOAD_URL,
-        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)",
-        "sha256": "",
-        "homepage": NIXOS_URL,
-        "foundation": "NixOS Foundation",
-        "governance": NIXOS_GOVERNANCE_URL,
-        "constitution": NIXOS_CONSTITUTION_URL,
-        "trademark": NIXOS_TRADEMARK_NOTICE,
+        "license": "MIT (Nixpkgs) + LGPL-2.1 (Nix)", "sha256": "",
+        "homepage": NIXOS_URL, "family": "Independente",
+    },
+    "Alpine Linux": {
+        "url": "https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-standard-3.20.3-x86_64.iso",
+        "docs": "https://alpinelinux.org/downloads/",
+        "license": "MIT + GPL-2.0", "sha256": "",
+        "homepage": "https://alpinelinux.org", "family": "Independente",
+    },
+    "Gentoo Linux": {
+        "url": "https://distfiles.gentoo.org/releases/amd64/autobuilds/current-install-amd64-minimal/",
+        "download_direct": False,
+        "docs": "https://www.gentoo.org/downloads/",
+        "license": "GPL-2.0", "sha256": "",
+        "homepage": "https://www.gentoo.org", "family": "Independente",
+    },
+    "Void Linux": {
+        "url": "https://repo-default.voidlinux.org/live/current/void-live-x86_64-20240314-base.iso",
+        "docs": "https://voidlinux.org/download/",
+        "license": "BSD-2-Clause + outros", "sha256": "",
+        "homepage": "https://voidlinux.org", "family": "Independente",
+    },
+    "Slackware 15": {
+        "url": "https://mirrors.slackware.com/slackware/slackware-iso/slackware64-15.0-iso/slackware64-15.0-install-dvd.iso",
+        "docs": "http://www.slackware.com/getslack/",
+        "license": "Slackware License (BSD-like)", "sha256": "",
+        "homepage": "http://www.slackware.com", "family": "Independente",
+    },
+    "Solus": {
+        "url": "https://getsol.us/download/",
+        "download_direct": False,
+        "docs": "https://getsol.us/download/",
+        "license": "GPL-2.0", "sha256": "",
+        "homepage": "https://getsol.us", "family": "Independente",
+    },
+    "Proxmox VE 8.2": {
+        "url": "https://www.proxmox.com/en/downloads/proxmox-virtual-environment",
+        "download_direct": False,
+        "docs": "https://pve.proxmox.com/wiki/Main_Page",
+        "license": "AGPL-3.0", "sha256": "",
+        "homepage": "https://www.proxmox.com", "family": "Servidor",
+    },
+    "TrueNAS SCALE": {
+        "url": "https://download.truenas.com/TrueNAS-SCALE-ElectricEel/24.10.0.2/TrueNAS-SCALE-24.10.0.2.iso",
+        "download_direct": True,
+        "docs": "https://www.truenas.com/docs/",
+        "license": "BSD-2-Clause", "sha256": "",
+        "homepage": "https://www.truenas.com", "family": "Servidor",
     },
 }
 
-# Dicionário retrocompatível — usado em vários lugares
 LINUX_DISTROS = {k: v["url"] for k, v in DISTRO_INFO.items()}
 DISTRO_SHA256 = {k: v["sha256"] for k, v in DISTRO_INFO.items()}
 
@@ -2000,7 +2045,10 @@ def _detect_linux_iso(iso_path: str) -> bool:
         name_lower = os.path.basename(iso_path).lower()
         for marker in ('ubuntu', 'debian', 'kali', 'parrot', 'fedora',
                        'mint', 'pop-os', 'manjaro', 'opensuse', 'arch',
-                       'zorin', 'proxmox', 'truenas', 'nixos', 'linux'):
+                       'zorin', 'proxmox', 'truenas', 'nixos', 'linux',
+                       'alma', 'rocky', 'centos', 'rhel', 'alpine',
+                       'gentoo', 'void', 'slackware', 'solus',
+                       'endeavour', 'garuda', 'elementary', 'tails'):
             if marker in name_lower:
                 return True
     except Exception:
@@ -2796,7 +2844,8 @@ def _apply_isohybrid_mbr(iso_path: str, drive_letter: str,
         if log_func:
             log_func(f"⚠️ Erro MBR isohybrid: {e}", is_warning=True)
         return False
-    # ==================================================================
+
+# ==================================================================
 # 13. ESCRITA DD
 # ==================================================================
 def _get_disk_number_from_device(device_path: str) -> Optional[int]:
@@ -3440,11 +3489,10 @@ def compute_checksums(iso_path, progress_cb=None) -> Dict[str, str]:
     return hashes
 
 # ==================================================================
-# 14. DOWNLOAD — ⭐ v3.4.0: SHA256 + Mirrors
+# 14. DOWNLOAD — SHA256 + Mirrors
 # ==================================================================
 def _sha256_file(filepath: str, progress_cb=None,
                  cancel_flag=None) -> Optional[str]:
-    """Calcula SHA256 em blocos (sem estourar memória)."""
     try:
         h = hashlib.sha256()
         total = os.path.getsize(filepath)
@@ -3472,7 +3520,6 @@ def verify_download_sha256(destino: str, distro_key: str,
                             log_func=None,
                             progress_cb=None,
                             cancel_flag=None) -> Tuple[bool, str]:
-    """Verifica hash SHA256 do arquivo baixado."""
     info = DISTRO_INFO.get(distro_key, {})
     expected = (info.get("sha256") or "").strip().lower()
     if not expected:
@@ -3501,15 +3548,7 @@ def verify_download_sha256(destino: str, distro_key: str,
     return False, "hash divergente"
 
 def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
-    """Retorna a fonte oficial e alternativas verificadas para a mesma ISO.
-
-    Espelhos não são intercambiáveis entre distribuições: um host pode espelhar
-    apenas pacotes, uma versão diferente, ou nenhum arquivo ISO. Por isso,
-    esta lista contém somente caminhos validados para os quais a substituição
-    do host preserva o layout do arquivo.
-    """
     urls = [primary_url]
-
     if "Ubuntu" in distro_key:
         urls.append(primary_url.replace("releases.ubuntu.com",
                                          "mirrors.kernel.org/ubuntu-releases"))
@@ -3519,7 +3558,6 @@ def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
     elif "Parrot" in distro_key:
         urls.append(primary_url.replace("parrot.elhacker.net",
                                         "deb.parrot.sh/parrot"))
-
     seen = set()
     out = []
     for u in urls:
@@ -3528,20 +3566,16 @@ def _get_download_mirrors(distro_key: str, primary_url: str) -> List[str]:
             out.append(u)
     return out
 
-
 def _find_distro_key(url: str, destino: str) -> str:
-    """Identifica a distribuição pela URL oficial ou por um nome ISO único."""
     for key, info in DISTRO_INFO.items():
         if info.get("url") == url:
             return key
-
     candidates: Dict[str, List[str]] = {}
     for key, info in DISTRO_INFO.items():
         source_url = str(info.get("url") or "")
         filename = source_url.split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
         if filename.lower().endswith(".iso"):
             candidates.setdefault(filename.lower(), []).append(key)
-
     for value in (url, destino):
         filename = str(value).split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
         matches = candidates.get(filename.lower(), [])
@@ -3865,6 +3899,10 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
                 try:
                     ok = fn(attempt_url, destino, progress_cb,
                             cancel_flag, log_func)
+                    
+                except TypeError:
+                    
+                    ok = fnattempt_url, destino
                 except TypeError:
                     ok = fn(attempt_url, destino, progress_cb, cancel_flag)
                 if cancel_flag():
@@ -3872,7 +3910,6 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
                 if not ok:
                     last_error = f"{name} falhou"
                     continue
-
                 size = os.path.getsize(destino)
                 head, info = _inspect_file_bytes(destino, 512)
                 head_lower = head.lstrip().lower()
@@ -3892,7 +3929,6 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag,
                     os.remove(destino)
                     last_error = f"{name}: arquivo muito pequeno"
                     continue
-
                 if distro_key:
                     ok_hash, hash_msg = verify_download_sha256(
                         destino, distro_key, log_func,
@@ -3958,9 +3994,9 @@ class ToolTip:
         try:
             if not self.widget.winfo_exists():
                 return
-                raw_text = (self.text_getter() if callable(self.text_getter)
-                    else self.text_getter)
-                text = str(raw_text) if raw_text is not None else ""
+            raw_text = (self.text_getter() if callable(self.text_getter)
+                        else self.text_getter)
+            text = str(raw_text) if raw_text is not None else ""
         except Exception:
             text = None
         if not text:
@@ -4030,7 +4066,7 @@ class ToolTip:
         self._visible = False
 
 # ==================================================================
-# 16. NEON THEME BALL — v3.3.0
+# 16. NEON THEME BALL — v3.6.0 (com ciclo de cores dos temas)
 # ==================================================================
 class NeonThemeBall(tk.Canvas):
     def __init__(self, parent, theme_labels, current_label, on_change, size=44):
@@ -4230,12 +4266,43 @@ class NeonThemeBall(tk.Canvas):
             gp = GLOBAL_PULSE_STATE['phase']
         else:
             gp = self._phase
-        try:
-            acc_rgb = self._hex_to_rgb(COLORS.get('accent', '#00ff41'))
-            acc2_rgb = self._hex_to_rgb(COLORS.get('accent2', '#00ccff'))
-        except Exception:
-            acc_rgb = (0, 255, 65)
-            acc2_rgb = (0, 204, 255)
+
+        # ── v3.6.0: Orb OSCILA por todas as cores dos temas quando ativo ──
+        if GLOBAL_PULSE_STATE.get('color_cycle_phase', 0) > 0:
+            try:
+                theme_keys_cycle = list(THEMES_RAW.keys())
+                if theme_keys_cycle:
+                    base_key = theme_keys_cycle[
+                        GLOBAL_PULSE_STATE.get('color_cycle_index', 0)
+                        % len(theme_keys_cycle)
+                    ]
+                    base_theme = THEMES_RAW[base_key]
+                    acc_rgb = self._hex_to_rgb(
+                        base_theme.get('accent', '#00ff41'))
+                    acc2_rgb = self._hex_to_rgb(
+                        base_theme.get('accent2', '#00ccff'))
+                else:
+                    acc_rgb = self._hex_to_rgb(
+                        COLORS.get('accent', '#00ff41'))
+                    acc2_rgb = self._hex_to_rgb(
+                        COLORS.get('accent2', '#00ccff'))
+            except Exception:
+                try:
+                    acc_rgb = self._hex_to_rgb(
+                        COLORS.get('accent', '#00ff41'))
+                    acc2_rgb = self._hex_to_rgb(
+                        COLORS.get('accent2', '#00ccff'))
+                except Exception:
+                    acc_rgb = (0, 255, 65)
+                    acc2_rgb = (0, 204, 255)
+        else:
+            try:
+                acc_rgb = self._hex_to_rgb(COLORS.get('accent', '#00ff41'))
+                acc2_rgb = self._hex_to_rgb(COLORS.get('accent2', '#00ccff'))
+            except Exception:
+                acc_rgb = (0, 255, 65)
+                acc2_rgb = (0, 204, 255)
+
         n_trail = 6
         for i in range(n_trail):
             t = i / float(n_trail)
@@ -4357,7 +4424,7 @@ class NeonThemeBall(tk.Canvas):
         super().destroy()
 
 # ==================================================================
-# 17. ROUNDED BUTTON — v3.3.0
+# 17. ROUNDED BUTTON — v3.6.0
 # ==================================================================
 class RoundedButton(tk.Canvas):
     def __init__(self, parent, text="", command=None, kind="normal",
@@ -4623,8 +4690,7 @@ class RoundedButton(tk.Canvas):
         return "break"
 
     def set_state(self, **kwargs):
-        """Configura o botão. Substitui config() do Tkinter para
-        evitar incompatibilidade de assinatura."""
+        """Configura o botão. Substitui config() para evitar conflito de assinatura."""
         if 'state' in kwargs:
             st = kwargs.pop('state')
             self._enabled = (st != "disabled" and st != tk.DISABLED)
@@ -4702,9 +4768,8 @@ class NeonTabBar(tk.Frame):
 
     def current(self):
         return self._current
-
 # ==================================================================
-# 19. ULTIMATE POPUP
+# 19. ULTIMATE POPUP — Modal sistêmico (v3.6.0 com PgUp/PgDown)
 # ==================================================================
 class UltimatePopup:
     MIN_W = 360
@@ -4903,6 +4968,29 @@ class UltimatePopup:
             dlg.bind_all('<MouseWheel>', _on_text_wheel, add='+')
         except Exception:
             pass
+
+        # ── v3.6.0: PgUp/PgDown rolam o conteúdo da modal ──
+        def _pgup_popup(e=None):
+            try:
+                text.yview_scroll(-10, "units")
+            except Exception:
+                pass
+            return "break"
+        def _pgdn_popup(e=None):
+            try:
+                text.yview_scroll(10, "units")
+            except Exception:
+                pass
+            return "break"
+        dlg.bind('<Prior>', _pgup_popup, add='+')
+        dlg.bind('<Next>',  _pgdn_popup, add='+')
+        text.bind('<Prior>', _pgup_popup, add='+')
+        text.bind('<Next>',  _pgdn_popup, add='+')
+        body.bind('<Prior>', _pgup_popup, add='+')
+        body.bind('<Next>',  _pgdn_popup, add='+')
+        outer.bind('<Prior>', _pgup_popup, add='+')
+        outer.bind('<Next>',  _pgdn_popup, add='+')
+
         footer = tk.Frame(outer, bg=colors['frame_bg'])
         footer.grid(row=2, column=0, sticky='ew', padx=16, pady=(8, 14))
         n_buttons = len(buttons)
@@ -4986,7 +5074,7 @@ class OTGDeviceManager:
         return otg_paths
 
 # ==================================================================
-# 20B. LOGO CLICÁVEL PENBOOT (v3.3.0)
+# 20B. LOGO CLICÁVEL PENBOOT — v3.6.0 (🚀)
 # ==================================================================
 class ClickableLogo(tk.Frame):
     def __init__(self, parent, version: str, on_click, **kwargs):
@@ -5002,7 +5090,7 @@ class ClickableLogo(tk.Frame):
         self._hover = False
         self._focused = False
         self._icon_lbl = tk.Label(
-            self, text="🔌",
+            self, text=LOGO_ICON,   # v3.6.0: 🚀
             font=('Segoe UI Emoji', 15, 'bold'),
             fg=COLORS['accent'], bg=parent_bg, cursor='hand2')
         self._icon_lbl.pack(side=tk.LEFT)
@@ -5143,15 +5231,14 @@ class ClickableLogo(tk.Frame):
                 pass
             self._anim_id = None
         super().destroy()
-        
+
 # ==================================================================
-# ==================================================================
-# 21. INTERFACE PRINCIPAL — v3.4.0
+# 21. INTERFACE PRINCIPAL — v3.6.0
 # ==================================================================
 class DarkPenBoot:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title(f"🔌 {APP_NAME} v{APP_VERSION}")
+        self.root.title(f"{LOGO_ICON} {APP_NAME} v{APP_VERSION}")
         setattr(root, '_darkpenboot_owner', self)
         self.config = load_config()
         root.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
@@ -5213,21 +5300,17 @@ class DarkPenBoot:
             self.log("📱 Modo iOS detectado (Pythonista / iSH).", is_info=True)
         elif IS_ANDROID or IS_TERMUX:
             self.log("📱 Modo Android/Termux detectado.", is_info=True)
-        self.log("🆕 v3.4.0: Tema 🌙 Soft Dark (menos cansaço visual)",
+        self.log("🆕 v3.6.0: Logo 🚀 + PgUp/PgDown em todas as modais",
                  is_success=True)
-        self.log("🆕 v3.4.0: NixOS 24.11 + 25.05 com Governança oficial",
+        self.log("🆕 v3.6.0: ~35 distros com links oficiais",
                  is_success=True)
-        self.log("🆕 v3.4.0: Aba 📚 Fontes + Trademark NixOS respeitado",
+        self.log("🆕 v3.6.0: Pulso Neon só em tarefas reais",
                  is_success=True)
-        self.log("🆕 v3.4.0: Verificação SHA256 automática pós-download",
+        self.log("🆕 v3.6.0: Orb 3D oscila por todas as cores dos temas",
                  is_success=True)
-        self.log(f"🆕 v3.4.0: PREMIUM {PREMIUM_PRICE_BRL} — sem anúncios",
-                 is_success=True)
-        self.log("✅ v3.3.0: Pulso Neon Global + Orb 3D com rastro",
+        self.log("✅ v3.5.0: Janelas modais + ISOs Recentes + licença",
                  is_info=True)
-        self.log("✅ v3.3.0: Logo clicável (F1) + Aba 📖 Ajuda",
-                 is_info=True)
-        self.log("✅ v3.2.0: DD não deixa mais o pendrive em RAW/sumido",
+        self.log("✅ v3.4.0: Tema 🌙 Soft Dark + SHA256 + Premium",
                  is_info=True)
         self.log("🎨 Clique no LOGO ou no ORB para interagir", is_info=True)
         self.log("🛠️ Painel de Recuperação/Reparo USB: Ctrl+R", is_info=True)
@@ -5495,13 +5578,15 @@ class DarkPenBoot:
             pass
 
     # ==================================================================
-    # PULSO GLOBAL NEON (v3.3.0)
+    # PULSO GLOBAL NEON — v3.6.0 (com ciclo de cores p/ orb)
     # ==================================================================
     def _start_global_pulse(self):
         if GLOBAL_PULSE_STATE['active']:
             return
         GLOBAL_PULSE_STATE['active'] = True
         GLOBAL_PULSE_STATE['phase'] = 0
+        GLOBAL_PULSE_STATE['color_cycle_phase'] = 0     # v3.6.0
+        GLOBAL_PULSE_STATE['color_cycle_index'] = 0     # v3.6.0
         self.log("💫 Pulso neon global ATIVADO", is_info=True)
         self._global_pulse_tick()
         try:
@@ -5522,6 +5607,13 @@ class DarkPenBoot:
         if GLOBAL_PULSE_STATE['active']:
             GLOBAL_PULSE_STATE['phase'] = (
                 GLOBAL_PULSE_STATE['phase'] + 1) % 16
+            # v3.6.0 — ciclo de cor do orb a cada 16 ticks (≈1s)
+            GLOBAL_PULSE_STATE['color_cycle_phase'] = (
+                GLOBAL_PULSE_STATE.get('color_cycle_phase', 0) + 1) % 16
+            if GLOBAL_PULSE_STATE['color_cycle_phase'] == 0:
+                total = max(1, len(THEMES_RAW))
+                GLOBAL_PULSE_STATE['color_cycle_index'] = (
+                    GLOBAL_PULSE_STATE.get('color_cycle_index', 0) + 1) % total
         if reactive:
             REACTIVE_PULSE_STATE['phase'] = (
                 REACTIVE_PULSE_STATE['phase'] + 1) % 16
@@ -5548,6 +5640,8 @@ class DarkPenBoot:
             if not GLOBAL_PULSE_STATE['active']:
                 return
             GLOBAL_PULSE_STATE['active'] = False
+            GLOBAL_PULSE_STATE['color_cycle_phase'] = 0   # v3.6.0
+            GLOBAL_PULSE_STATE['color_cycle_index'] = 0   # v3.6.0
             pulse_after = self._global_pulse_after
             if pulse_after is not None:
                 try:
@@ -5597,7 +5691,7 @@ class DarkPenBoot:
             self.log(log_msg, is_info=True)
 
     # ==================================================================
-    # ⭐ v3.4.0 — PREMIUM
+    # PREMIUM
     # ==================================================================
     def _open_premium_checkout(self):
         try:
@@ -5611,16 +5705,16 @@ class DarkPenBoot:
                 "✅ Compilado .exe com assinatura digital\n"
                 "✅ Acesso a temas exclusivos futuros\n"
                 "✅ Suporte prioritário via GitHub Issues\n"
-                "✅ Atualizações vitalícias da v3.4.x\n"
+                "✅ Atualizações vitalícias da v3.6.x\n"
                 "✅ Sem banner publicitário\n\n"
                 "─────────────────────────────────────────────\n"
                 "📋 O QUE VOCÊ JÁ TEM (GRÁTIS):\n"
                 "─────────────────────────────────────────────\n"
                 "• Todos os recursos de gravação\n"
                 "• Verificação SHA256 pós-download\n"
-                "• NixOS 24.11 + 25.05 com governança\n"
                 "• Painel de Recuperação USB\n"
                 "• 7 temas (incluindo 🌙 Soft Dark)\n"
+                "• ~35 distros Linux com links oficiais\n"
                 "• Downloads com fallback curl/wget/urllib\n\n"
                 "═══════════════════════════════════════════════\n"
                 "🎯 Deseja abrir a página de checkout?\n"
@@ -5648,13 +5742,13 @@ class DarkPenBoot:
             self.log(f"⚠️ Erro ao abrir checkout: {e}", is_warning=True)
 
     # ==================================================================
-    # POPUP DE INSTRUÇÕES (v3.3.0)
+    # POPUP DE INSTRUÇÕES — v3.6.0
     # ==================================================================
     def _show_instructions_popup(self):
         try:
             msg = (
                 "╔══════════════════════════════════════════════╗\n"
-                "║   🔌 DARKPENBOOT PRO v3.5.0 — INSTRUÇÕES     ║\n"
+                "║   🚀 DARKPENBOOT PRO v3.6.0 — INSTRUÇÕES     ║\n"
                 "╚══════════════════════════════════════════════╝\n\n"
                 "📌 FLUXO BÁSICO (3 PASSOS)\n"
                 "─────────────────────────────────────────────\n"
@@ -5681,6 +5775,7 @@ class DarkPenBoot:
                 "Ctrl+L ......... Limpar log\n"
                 "Ctrl+S ......... Salvar log\n"
                 "F5 ............. Atualizar pendrives\n"
+                "PgUp/PgDown .... Rolar conteúdo em modais (v3.6.0)\n"
                 "Esc ............ Cancelar / fechar popup\n"
                 "Tab / Setas .... Navegar pelos controles\n"
                 "Enter .......... Acionar botão focado\n\n"
@@ -5689,10 +5784,21 @@ class DarkPenBoot:
                 "─────────────────────────────────────────────\n"
                 "🟢 Matrix · 🩸 Crimson · ❄️ Nord\n"
                 "⚡ Cyberpunk · 🟠 Monokai · ☀️ Light\n"
-                "🌙 Soft Dark (v3.4.0 — reduz fadiga visual)\n\n"
+                "🌙 Soft Dark (reduz fadiga visual)\n\n"
                 "• Clique no ORB (canto superior direito)\n"
                 "• Ele PULSA mais rápido durante operações\n"
+                "• O ORB oscila por TODAS as cores (v3.6.0)\n"
                 "• Esfera 3D + rastro de neon esmaecido\n\n"
+                "─────────────────────────────────────────────\n"
+                "🐧 DISTROS DISPONÍVEIS (v3.6.0)\n"
+                "─────────────────────────────────────────────\n"
+                "~35 distros com links oficiais:\n"
+                "Debian · Ubuntu · Mint · Pop!_OS · Zorin\n"
+                "elementary · Kali · Parrot · Tails\n"
+                "Fedora · AlmaLinux · Rocky · CentOS · RHEL\n"
+                "Arch · Manjaro · EndeavourOS · Garuda\n"
+                "openSUSE · NixOS · Alpine · Gentoo · Void\n"
+                "Slackware · Solus · Proxmox · TrueNAS\n\n"
                 "─────────────────────────────────────────────\n"
                 "⚙️  MODOS DE GRAVAÇÃO\n"
                 "─────────────────────────────────────────────\n"
@@ -5706,12 +5812,11 @@ class DarkPenBoot:
                 "   Ative 'Deixar RAW' na aba Avançado se quiser\n"
                 "   o comportamento antigo (disco offline).\n\n"
                 "─────────────────────────────────────────────\n"
-                "🔐 VERIFICAÇÃO SHA256 (v3.4.0)\n"
+                "🔐 VERIFICAÇÃO SHA256\n"
                 "─────────────────────────────────────────────\n"
-                "• Todo download de NixOS verifica SHA256\n"
+                "• Todo download verifica SHA256 quando disponível\n"
                 "• Se divergir, o arquivo é mantido como\n"
-                "  '.parcial' e o usuário é avisado\n"
-                "• Fontes oficiais em nixos.org/download\n\n"
+                "  '.parcial' e o usuário é avisado\n\n"
                 "─────────────────────────────────────────────\n"
                 "⭐ PREMIUM R$ 10 — SEM ANÚNCIOS\n"
                 "─────────────────────────────────────────────\n"
@@ -5724,7 +5829,7 @@ class DarkPenBoot:
                 "═════════════════════════════════════════════"
             )
             UltimatePopup.show(
-                self.root, "📖 Instruções — DarkPenBoot Pro v3.5.0",
+                self.root, "📖 Instruções — DarkPenBoot Pro v3.6.0",
                 msg, kind="info")
             self.log("📖 Popup de instruções aberto.", is_info=True)
         except Exception as e:
@@ -6005,19 +6110,22 @@ class DarkPenBoot:
             highlightthickness=2, labelanchor='nw', padx=10, pady=8)
 
     def _make_hyperlink(self, parent, text, url):
-        lbl = tk.Label(parent, text=text, fg=COLORS['info'],
-                       bg=parent.cget('bg'),
-                       font=('Segoe UI', 10, 'underline'),
-                       cursor='hand2')
-        def _open(e=None):
-            try:
-                webbrowser.open(url)
-            except Exception:
-                pass
-        lbl.bind('<Button-1>', _open)
-        lbl.bind('<Enter>', lambda e: lbl.configure(fg=COLORS['accent']))
-        lbl.bind('<Leave>', lambda e: lbl.configure(fg=COLORS['info']))
-        return lbl
+        """Retorna um tk.Button estilizado como link (focável por Tab)."""
+        try:
+            parent_bg = parent.cget('bg')
+        except Exception:
+            parent_bg = COLORS['frame_bg']
+        btn = tk.Button(
+            parent, text=text, fg=COLORS['info'], bg=parent_bg,
+            activebackground=parent_bg, activeforeground=COLORS['accent'],
+            font=('Segoe UI', 10, 'underline'),
+            cursor='hand2', relief=tk.FLAT, bd=0,
+            highlightthickness=1, highlightbackground=parent_bg,
+            highlightcolor=COLORS['accent'], takefocus=True,
+            command=lambda: webbrowser.open(url))
+        btn.bind('<Enter>', lambda e: btn.configure(fg=COLORS['accent']))
+        btn.bind('<Leave>', lambda e: btn.configure(fg=COLORS['info']))
+        return btn
 
     def _build_header(self, parent, row):
         header = tk.Frame(parent, bg=COLORS['bg'])
@@ -6035,7 +6143,7 @@ class DarkPenBoot:
                           "para ver as instruções de uso e atalhos.\n"
                           "Atalho rápido: F1")
         except Exception:
-            tk.Label(left, text="🔌 DARKPENBOOT",
+            tk.Label(left, text=f"{LOGO_ICON} DARKPENBOOT",
                      font=('Segoe UI', 13, 'bold'),
                      fg=COLORS['accent'], bg=COLORS['bg']).pack(side=tk.LEFT)
             tk.Label(left, text=f" v{APP_VERSION}", font=('Segoe UI', 8),
@@ -6055,6 +6163,7 @@ class DarkPenBoot:
                           "• Clique ou pressione Enter/Espaço\n"
                           "• Tab até o orb e Enter também funciona\n"
                           "• O orb tem RASTRO NEON pulsante\n"
+                          "• O orb OSCILA por todas as cores (v3.6.0)\n"
                           "• 7 temas (incluindo 🌙 Soft Dark)")
         except Exception:
             self.neon_ball = None
@@ -6108,8 +6217,7 @@ class DarkPenBoot:
         btn = self._make_button(inner, "🔄 Atualizar", self.refresh_drives,
                                  kind="normal")
         btn.grid(row=1, column=1, sticky='ew')
-        self._add_tip(btn, "🔄 Atualizar lista de pendrives (F5)\n"
-                          "⚡ Ativa PULSO NEON GLOBAL")
+        self._add_tip(btn, "🔄 Atualizar lista de pendrives (F5)")
 
         if IS_IOS:
             otg_lbl = tk.Label(card,
@@ -6166,7 +6274,7 @@ class DarkPenBoot:
         self._add_tip(b1, "📂 Escolher arquivo ISO/IMG (Ctrl+O)")
         b2 = self._make_button(btn_row, "📋 ISOs recentes", self._show_recent_isos)
         b2.grid(row=0, column=1, padx=1, sticky='ew')
-        self._add_tip(b2, "📋 Últimas 5 ISOs usadas")
+        self._add_tip(b2, "📋 Últimas 5 ISOs usadas (Tab/Enter para escolher)")
         b3 = self._make_button(btn_row, "🔐 Hash", self._show_checksums)
         b3.grid(row=0, column=2, padx=1, sticky='ew')
         self._add_tip(b3, "🔐 Calcula checksums")
@@ -6190,12 +6298,12 @@ class DarkPenBoot:
         self._add_tip(b1,
                       "📥 Baixa a distro Linux com FALLBACK\n"
                       "(curl → wget → urllib) + User-Agent de navegador\n"
-                      "🔐 Verifica SHA256 automaticamente quando disponível")
+                      "🔐 Verifica SHA256 automaticamente quando disponível\n"
+                      "🐧 v3.6.0: ~35 distros com links oficiais")
 
-        # ⭐ v3.4.0: Info sobre NixOS
         nixos_info = tk.Label(
             inner,
-            text="🎯 NixOS 24.11 + 25.05 disponíveis com GOVERNANÇA oficial",
+            text="🎯 v3.6.0 — ~35 distros Linux disponíveis com links oficiais",
             fg=COLORS['accent2'], bg=COLORS['frame_bg'],
             font=('Segoe UI', 8, 'italic'))
         nixos_info.grid(row=1, column=0, columnspan=3, sticky='ew',
@@ -6291,7 +6399,6 @@ class DarkPenBoot:
                       "⚙️ Modo de gravação\n\n"
                       "• Extrair: formata e copia arquivos\n"
                       "• DD: clonagem bit-a-bit (pendrive é remontado)")
-
     def _build_advanced_options(self, parent):
         frame = tk.Frame(parent, bg=COLORS['frame_bg'])
         frame.pack(fill=tk.X, padx=8, pady=8)
@@ -6410,9 +6517,8 @@ class DarkPenBoot:
         tk.Frame(frame, bg=COLORS['frame_border'], height=1).pack(
             fill=tk.X, pady=8)
         tk.Label(frame,
-                 text="⚡ v3.4.0: Tema Soft Dark + NixOS Governance + SHA256. "
-                      "PREMIUM R$ 10 sem anúncios. "
-                      "DD não deixa mais o pendrive em RAW/sumido.",
+                 text="⚡ v3.6.0: Logo 🚀 + PgUp/PgDown + ~35 distros + "
+                      "Orb oscila cores + Pulso só em tarefas reais.",
                  fg=COLORS['info'], bg=COLORS['frame_bg'],
                  font=('Segoe UI', 8, 'italic'),
                  wraplength=380, justify=tk.LEFT).pack(anchor='w', pady=4)
@@ -6449,7 +6555,7 @@ class DarkPenBoot:
         txt.configure(yscrollcommand=sb.set)
 
         content = (
-            "🔌 DARKPENBOOT PRO v3.5.0 — GUIA RÁPIDO\n"
+            "🚀 DARKPENBOOT PRO v3.6.0 — GUIA RÁPIDO\n"
             "═══════════════════════════════════════════════\n\n"
             "📌 PASSO A PASSO\n"
             "───────────────────────────────────────────────\n"
@@ -6461,26 +6567,14 @@ class DarkPenBoot:
             "5) Aba ⚙️ BÁSICO → escolha FS e esquema\n"
             "6) Clique 💾 GRAVAR\n\n"
             "───────────────────────────────────────────────\n"
-            "🆕 v3.4.0 — NOVIDADES\n"
+            "🆕 v3.6.0 — NOVIDADES\n"
             "───────────────────────────────────────────────\n"
-            "• Tema 🌙 Soft Dark (menos cansaço visual)\n"
-            "• NixOS 24.11 + 25.05 com GOVERNANÇA oficial\n"
-            "• Aba 📚 Fontes com créditos e licenças\n"
-            "• Verificação SHA256 automática pós-download\n"
-            "• Botão ⭐ PREMIUM (R$ 10) sem anúncios\n\n"
-            "───────────────────────────────────────────────\n"
-            "⚙️ MODO EXTRAIR vs MODO DD (Bit-a-Bit)\n"
-            "───────────────────────────────────────────────\n"
-            "EXTRAIR (recomendado para Windows):\n"
-            "   • Formata o pendrive no FS escolhido (NTFS/FAT32)\n"
-            "   • COPIA os arquivos de dentro da ISO\n"
-            "   • Aplica bootloader (bootsect / isohybrid)\n"
-            "   • Pendrive continua visível no Explorer ✅\n\n"
-            "DD / Bit-a-Bit (ideal para Linux):\n"
-            "   • Clona a ISO byte-a-byte no pendrive\n"
-            "   • Após gravar, REMONTA o pendrive automaticamente\n"
-            "   • Ative 'Deixar RAW' na aba Avançado para manter\n"
-            "     o estado bruto (disco offline)\n\n"
+            "• Logo 🚀 (foguete) no lugar do 🔌\n"
+            "• PgUp/PgDown navegam em TODAS as modais\n"
+            "• Lista EXPANDIDA de ~35 distros oficiais\n"
+            "• Pulso Neon SÓ em tarefas reais\n"
+            "• Orb 3D OSCILA por todas as cores dos temas\n"
+            "• Tema geral da UI permanece ESTÁVEL\n\n"
             "───────────────────────────────────────────────\n"
             "⌨️ ATALHOS\n"
             "───────────────────────────────────────────────\n"
@@ -6491,35 +6585,28 @@ class DarkPenBoot:
             "F5 ............. Atualizar pendrives\n"
             "Ctrl+L ......... Limpar log\n"
             "Ctrl+S ......... Salvar log\n"
+            "PgUp/PgDown .... Rolar modais (v3.6.0)\n"
             "Tab / Setas .... Navegar\n"
             "Enter .......... Acionar botão focado\n"
-            "Esc ............ Cancelar / fechar\n\n"
+            "Esc ............ Cancelar / fechar popup\n\n"
             "───────────────────────────────────────────────\n"
             "🎨 TEMAS (7 DISPONÍVEIS)\n"
             "───────────────────────────────────────────────\n"
             "🟢 Matrix · 🩸 Crimson · ❄️ Nord\n"
             "⚡ Cyberpunk · 🟠 Monokai · ☀️ Light\n"
-            "🌙 Soft Dark (NOVO v3.4.0)\n\n"
-            "Clique no ORB no canto superior direito.\n\n"
+            "🌙 Soft Dark\n\n"
+            "• Clique no ORB no canto superior direito\n"
+            "• O orb oscila por TODAS as cores (v3.6.0)\n\n"
             "───────────────────────────────────────────────\n"
-            "🔐 VERIFICAÇÃO SHA256 (v3.4.0)\n"
+            "🐧 DISTROS DISPONÍVEIS (v3.6.0)\n"
             "───────────────────────────────────────────────\n"
-            "• Downloads verificam SHA256 automaticamente\n"
-            "• NixOS tem hashes oficiais em nixos.org\n"
-            "• Se divergir, o arquivo vira '.parcial'\n"
-            "• Você é avisado antes de usar\n\n"
-            "↺ RESTAURAR CONFIGURAÇÕES\n"
-            "───────────────────────────────────────────────\n"
-            "• Volta tema, FS, esquema, modo e opções\n"
-            "  avançadas ao estado recomendado\n"
-            "• Preserva downloads, logs e licença Premium\n\n"
-            "⚖️ NIXOS E USO DA MARCA\n"
-            "───────────────────────────────────────────────\n"
-            "• NixOS® é marca da NixOS Foundation\n"
-            "• Este projeto não é afiliado, endossado ou\n"
-            "  patrocinado pela NixOS Foundation\n"
-            "• Consulte governança e downloads nos links\n"
-            "  oficiais da aba Fontes\n\n"
+            "~35 distros com links oficiais:\n"
+            "Debian · Ubuntu · Mint · Pop!_OS · Zorin\n"
+            "elementary · Kali · Parrot · Tails\n"
+            "Fedora · AlmaLinux · Rocky · CentOS · RHEL\n"
+            "Arch · Manjaro · EndeavourOS · Garuda\n"
+            "openSUSE · NixOS · Alpine · Gentoo · Void\n"
+            "Slackware · Solus · Proxmox · TrueNAS\n\n"
             "───────────────────────────────────────────────\n"
             "🌐 GitHub: github.com/Avlis1412\n"
             "👤 Autor: Adriano Rodrigues da Silva\n"
@@ -6541,9 +6628,6 @@ class DarkPenBoot:
         b2.pack(side=tk.LEFT, padx=4)
         self._add_tip(b2, "Abre o repositório no navegador.")
 
-    # ==================================================================
-    # ⭐ v3.4.0 — ABA FONTES
-    # ==================================================================
     def _build_sources_tab(self, parent):
         frame = tk.Frame(parent, bg=COLORS['frame_bg'])
         frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -6571,135 +6655,98 @@ class DarkPenBoot:
         txt.configure(yscrollcommand=sb.set)
 
         content = (
-            "📚 FONTES, CRÉDITOS E LICENÇAS — v3.4.0\n"
+            "📚 FONTES, CRÉDITOS E LICENÇAS — v3.6.0\n"
             "═══════════════════════════════════════════════\n\n"
-            "🟣 NIXOS — FONTE OFICIAL E GOVERNANÇA\n"
-            "───────────────────────────────────────────────\n"
-            "NixOS® é uma marca registrada da NixOS Foundation\n"
-            "(Stichting NixOS Foundation), organização sem fins\n"
-            "lucrativos registrada na Holanda.\n\n"
-            "O DarkPenBoot Pro NÃO é afiliado, endossado ou\n"
-            "patrocinado pela NixOS Foundation. A menção\n"
-            "honrosa se dá pelo uso da filosofia declarativa\n"
-            "em nosso projeto e pelo respeito à comunidade.\n\n"
-            "🏛️  GOVERNANÇA OFICIAL:\n"
-            "   • Board: nixos.org/community/teams/foundation-board\n"
-            "   • Steering Committee:\n"
-            "     nixos.org/community/teams/steering-committee\n"
-            "   • Constituição:\n"
-            "     github.com/NixOS/org/blob/main/doc/constitution.md\n"
-            "   • Governança geral: nixos.org/governance/\n\n"
-            "🌐 LINKS OFICIAIS NIXOS:\n"
-            "   • Homepage: nixos.org\n"
-            "   • Download: nixos.org/download/\n"
-            "   • Releases: releases.nixos.org/\n"
-            "   • Manual: nixos.org/manual/nixos/stable/\n\n"
-            "📦 VERSÕES DISPONÍVEIS NO DARKPENBOOT:\n"
-            "   • NixOS 24.11 'Vicuña' (lançado 30/11/2024)\n"
-            "     - GNOME · KDE Plasma 6 · Minimal\n"
-            "   • NixOS 25.05 (mais recente)\n"
-            "     - GNOME · KDE Plasma 6 · Minimal\n\n"
-            "📜 LICENÇAS DOS COMPONENTES NIXOS:\n"
-            "   • Nixpkgs: MIT License\n"
-            "   • Nix (gerenciador): LGPL-2.1\n"
-            "   • Logo NixOS: CC BY 4.0\n"
-            "   • Documentação: CC BY-SA 4.0\n\n"
+            + GENERAL_LEGAL_NOTICE + "\n\n"
             "═══════════════════════════════════════════════\n"
-            "🐧 DEMAIS DISTROS E SUAS LICENÇAS\n"
+            "🐧 DISTROS LINUX E SUAS LICENÇAS (v3.6.0)\n"
             "═══════════════════════════════════════════════\n\n"
-            "• Parrot OS 7.3 — GPL-3.0 (Debian derivative)\n"
-            "  Site: parrotsec.org\n"
-            "  Download: parrotsec.org/download/\n\n"
-            "• Kali Linux 2024.1 — GPL-3.0 (Debian derivative)\n"
-            "  Site: kali.org\n"
-            "  Download: kali.org/get-kali/\n\n"
+            "• Debian 12 — DFSG-compliant (GPL, MIT, BSD)\n"
+            "  Site: debian.org | Download: debian.org/distrib/\n\n"
             "• Ubuntu 24.04 LTS — GPL-3.0\n"
-            "  Site: ubuntu.com\n"
-            "  Download: ubuntu.com/download/desktop\n\n"
-            "• Debian 12.5 — DFSG-compliant (GPL, MIT, BSD)\n"
-            "  Site: debian.org\n"
-            "  Download: debian.org/CD/http-ftp/\n\n"
-            "• Fedora Workstation 39 — GPL-2.0 + MIT + Apache 2.0\n"
-            "  Site: fedoraproject.org\n"
-            "  Download: fedoraproject.org/workstation/download/\n\n"
-            "• Linux Mint 21.3 — GPL-3.0\n"
-            "  Site: linuxmint.com\n"
-            "  Download: linuxmint.com/download.php\n\n"
-            "• Pop!_OS 22.04 LTS — GPL-3.0\n"
-            "  Site: pop.system76.com\n"
-            "  Foundation: System76\n\n"
-            "• Manjaro KDE 23.1 — GPL-3.0 (Arch-based)\n"
-            "  Site: manjaro.org\n"
-            "  Foundation: Manjaro GmbH & Co. KG\n\n"
-            "• openSUSE Leap 15.5 — GPL-2.0 / GPL-3.0\n"
-            "  Site: opensuse.org\n"
-            "  Foundation: openSUSE Project / SUSE\n\n"
-            "• Arch Linux 2024.03.01 — GPL-2.0 e similares\n"
-            "  Site: archlinux.org\n"
-            "  Download: archlinux.org/download/\n\n"
+            "  Site: ubuntu.com | Download: ubuntu.com/download\n\n"
+            "• Linux Mint 22 — GPL-3.0\n"
+            "  Site: linuxmint.com | Download: linuxmint.com/download.php\n\n"
+            "• Pop!_OS 22.04 LTS — GPL-3.0 (System76)\n"
+            "  Site: pop.system76.com\n\n"
             "• Zorin OS 17 Core — GPL-3.0\n"
-            "  Site: zorin.com\n"
-            "  Foundation: Zorin Group\n\n"
-            "• Proxmox VE 8.1 — AGPL-3.0\n"
-            "  Site: proxmox.com\n"
-            "  Foundation: Proxmox Server Solutions GmbH\n\n"
-            "• TrueNAS SCALE — BSD-2-Clause\n"
-            "  Site: truenas.com\n"
-            "  Foundation: iXsystems\n\n"
+            "  Site: zorin.com | Download: zorin.com/os/download/\n\n"
+            "• elementary OS 7 — GPL-3.0 + LGPL\n"
+            "  Site: elementary.io\n\n"
+            "• Kali Linux 2024.3 — GPL-3.0 (Debian derivative)\n"
+            "  Site: kali.org | Download: kali.org/get-kali/\n\n"
+            "• Parrot OS 7.3 — GPL-3.0 (Debian derivative)\n"
+            "  Site: parrotsec.org | Download: parrotsec.org/download/\n\n"
+            "• Tails 6 — GPL-3.0\n"
+            "  Site: tails.net | Download: tails.net/install/\n\n"
+            "• Fedora 40 — GPL-2.0 + MIT + Apache 2.0\n"
+            "  Site: fedoraproject.org\n\n"
+            "• AlmaLinux 9 — GPL-2.0 + BSD\n"
+            "  Site: almalinux.org\n\n"
+            "• Rocky Linux 9 — GPL-2.0 + BSD\n"
+            "  Site: rockylinux.org\n\n"
+            "• CentOS Stream 9 — GPL-2.0\n"
+            "  Site: centos.org\n\n"
+            "• RHEL 9 Developer — Red Hat Subscription\n"
+            "  Site: developers.redhat.com\n\n"
+            "• Arch Linux — GPL-2.0 e similares\n"
+            "  Site: archlinux.org | Download: archlinux.org/download/\n\n"
+            "• Manjaro KDE — GPL-3.0 (Arch-based)\n"
+            "  Site: manjaro.org | Foundation: Manjaro GmbH & Co. KG\n\n"
+            "• EndeavourOS — GPL-3.0 (Arch-based)\n"
+            "  Site: endeavouros.com\n\n"
+            "• Garuda Linux — GPL-3.0 (Arch-based)\n"
+            "  Site: garudalinux.org\n\n"
+            "• openSUSE Leap 15.6 — GPL-2.0 / GPL-3.0\n"
+            "  Site: opensuse.org | Foundation: openSUSE Project / SUSE\n\n"
+            "• openSUSE Tumbleweed — GPL-2.0 / GPL-3.0\n"
+            "  Site: opensuse.org\n\n"
+            "• NixOS 24.11 / 25.05 — MIT (Nixpkgs) + LGPL-2.1 (Nix)\n"
+            "  Site: nixos.org | Download: nixos.org/download/\n\n"
+            "• Alpine Linux — MIT + GPL-2.0\n"
+            "  Site: alpinelinux.org\n\n"
+            "• Gentoo Linux — GPL-2.0\n"
+            "  Site: gentoo.org\n\n"
+            "• Void Linux — BSD-2-Clause + outros\n"
+            "  Site: voidlinux.org\n\n"
+            "• Slackware 15 — Slackware License (BSD-like)\n"
+            "  Site: slackware.com\n\n"
+            "• Solus — GPL-2.0\n"
+            "  Site: getsol.us\n\n"
+            "• Proxmox VE 8.2 — AGPL-3.0\n"
+            "  Site: proxmox.com\n\n"
+            "• TrueNAS SCALE — BSD-2-Clause (iXsystems)\n"
+            "  Site: truenas.com\n\n"
             "═══════════════════════════════════════════════\n"
             "🪟 MICROSOFT — WINDOWS E SERVER\n"
             "═══════════════════════════════════════════════\n\n"
             "Todas as ISOs do Windows e Windows Server são\n"
-            "baixadas EXCLUSIVAMENTE dos sites oficiais da\n"
-            "Microsoft (microsoft.com). Nenhuma ISO é\n"
-            "distribuída diretamente pelo DarkPenBoot Pro.\n\n"
-            "• Windows 11: microsoft.com/software-download/windows11\n"
-            "• Windows 10: microsoft.com/software-download/windows10\n"
-            "• Windows Server: microsoft.com/en-us/evalcenter\n"
-            "• SQL Server: microsoft.com/en-us/evalcenter\n\n"
-            "Windows® é marca registrada da Microsoft Corporation.\n"
-            "DarkPenBoot Pro NÃO é afiliado à Microsoft.\n\n"
+            "obtidas EXCLUSIVAMENTE via links oficiais da\n"
+            "Microsoft (microsoft.com). O DarkPenBoot Pro\n"
+            "apenas redireciona o navegador para os canais\n"
+            "oficiais — nenhuma ISO é armazenada ou\n"
+            "distribuída pelo aplicativo.\n\n"
+            "Windows® é marca registrada da Microsoft Corporation.\n\n"
             "═══════════════════════════════════════════════\n"
             "🍏 APPLE macOS\n"
             "═══════════════════════════════════════════════\n\n"
             "Distribuição via repositório comunitário:\n"
             "   github.com/Comp-Labs/Download-macOS\n\n"
-            "macOS® é marca registrada da Apple Inc.\n"
-            "DarkPenBoot Pro NÃO é afiliado à Apple.\n\n"
+            "macOS® é marca registrada da Apple Inc.\n\n"
             "═══════════════════════════════════════════════\n"
             "🛠️ SOFTWARE DE TERCEIROS UTILIZADO\n"
             "═══════════════════════════════════════════════\n\n"
             "• 7-Zip (Igor Pavlov) — LGPL + BSD + unRAR restriction\n"
-            "  Uso: extração de ISOs grandes\n\n"
             "• WinRAR / UnRAR (win.rar GmbH) — Trial + unRAR license\n"
-            "  Uso: extração alternativa\n\n"
             "• bsdtar / libarchive — BSD-2-Clause\n"
-            "  Uso: extração portável\n\n"
             "• curl (Daniel Stenberg) — MIT-like\n"
-            "  Uso: download HTTP/HTTPS\n\n"
             "• wget (GNU Project) — GPL-3.0\n"
-            "  Uso: download HTTP/HTTPS\n\n"
             "• Python 3 (PSF) — PSF License\n"
-            "  Uso: linguagem base do DarkPenBoot Pro\n\n"
-            "• Tkinter / ttk (Tcl/Tk) — BSD-style\n"
-            "  Uso: interface gráfica\n\n"
+            "• Tkinter / ttk (Tcl/Tk) — BSD-style\n\n"
             "═══════════════════════════════════════════════\n"
             "👤 AUTOR DO DARKPENBOOT PRO\n"
             "═══════════════════════════════════════════════\n\n"
-            "Adriano Rodrigues da Silva\n"
-            "GitHub: github.com/Avlis1412\n"
-            "Projeto: DarkPenBoot Pro v3.5.0\n\n"
-            "═══════════════════════════════════════════════\n"
-            "⚖️  AVISO LEGAL\n"
-            "═══════════════════════════════════════════════\n\n"
-            "• Este software é distribuído 'COMO ESTÁ', sem\n"
-            "  garantias de qualquer tipo.\n\n"
-            "• O usuário é o ÚNICO responsável pelo uso do\n"
-            "  software e pelos danos que possam ocorrer.\n\n"
-            "• Todas as marcas registradas mencionadas\n"
-            "  pertencem aos seus respectivos donos.\n\n"
-            "• O DarkPenBoot Pro respeita todas as licenças\n"
-            "  open source das distros e ferramentas usadas.\n\n"
+            + LICENSE_REGISTRATION_NOTICE + "\n\n"
             "═══════════════════════════════════════════════\n"
             f"📅 Documento atualizado em v{APP_VERSION}\n"
             "═══════════════════════════════════════════════"
@@ -6710,23 +6757,22 @@ class DarkPenBoot:
         btn_frame = tk.Frame(frame, bg=COLORS['frame_bg'])
         btn_frame.pack(fill=tk.X, pady=(10, 0))
         b1 = self._make_button(
-            btn_frame, "🟣 NixOS Governance",
-            lambda: webbrowser.open(NIXOS_GOVERNANCE_URL),
+            btn_frame, "📜 Licença Completa",
+            self._show_license_popup,
             kind="primary", width=170)
         b1.pack(side=tk.LEFT, padx=4)
-        self._add_tip(b1, "Abre nixos.org/governance/ no navegador.")
+        self._add_tip(b1, "Mostra a licença de uso completa.")
         b2 = self._make_button(
-            btn_frame, "📥 NixOS Download",
-            lambda: webbrowser.open(NIXOS_DOWNLOAD_URL),
-            kind="normal", width=170)
+            btn_frame, "🌐 GitHub",
+            lambda: webbrowser.open(GITHUB_URL),
+            kind="normal", width=140)
         b2.pack(side=tk.LEFT, padx=4)
-        self._add_tip(b2, "Abre nixos.org/download/ no navegador.")
-        b3 = self._make_button(
-            btn_frame, "📜 Constituição",
-            lambda: webbrowser.open(NIXOS_CONSTITUTION_URL),
-            kind="normal", width=150)
-        b3.pack(side=tk.LEFT, padx=4)
-        self._add_tip(b3, "Abre a constituição do projeto NixOS.")
+        self._add_tip(b2, "Abre o repositório oficial.")
+
+    def _show_license_popup(self):
+        UltimatePopup.show(
+            self.root, "📜 Licença de Uso — DarkPenBoot Pro",
+            LICENSE_REGISTRATION_NOTICE, kind="info")
 
     def _build_progress(self, parent, row):
         wrapper = tk.Frame(parent, bg=COLORS['bg'])
@@ -6876,7 +6922,7 @@ class DarkPenBoot:
         self.log_text.tag_config('info', foreground=COLORS['info'])
         btn_frame = tk.Frame(frame, bg=COLORS['frame_bg'])
         btn_frame.grid(row=1, column=0, sticky='ew', padx=4, pady=(0, 18))
-        for i in range(4):
+        for i in range(3):
             btn_frame.columnconfigure(i, weight=1)
         bl = self._make_button(btn_frame, "💾 Log", self._save_log, width=70)
         bl.grid(row=0, column=0, padx=1, sticky='ew')
@@ -6884,14 +6930,10 @@ class DarkPenBoot:
         bc = self._make_button(btn_frame, "🗑️", self._clear_log, width=70)
         bc.grid(row=0, column=1, padx=1, sticky='ew')
         self._add_tip(bc, "🗑️ Limpa log (Ctrl+L)")
-        bd = self._make_button(btn_frame, "❤️", self._open_donate,
-                                kind="primary", width=70)
-        bd.grid(row=0, column=2, padx=1, sticky='ew')
-        self._add_tip(bd, "❤️ Doar via PIX")
         ba = self._make_button(btn_frame, "ℹ️ Sobre",
                     lambda: self._show_about(), width=96)
-        ba.grid(row=0, column=3, padx=1, sticky='ew')
-        self._add_tip(ba, "ℹ️ Sobre + GitHub + NixOS")
+        ba.grid(row=0, column=2, padx=1, sticky='ew')
+        self._add_tip(ba, "ℹ️ Sobre + Licença + GitHub")
 
     def log(self, msg, is_error=False, is_warning=False,
             is_success=False, is_info=False):
@@ -6975,26 +7017,75 @@ class DarkPenBoot:
         lines = self._log_buffer[-n:] if self._log_buffer else []
         return '\n'.join(lines)
 
+    def _center_toplevel(self, dlg, parent=None):
+        """Centraliza uma Toplevel na tela (ou sobre o parent)."""
+        try:
+            dlg.update_idletasks()
+            w = dlg.winfo_width()
+            h = dlg.winfo_height()
+            if w <= 1:
+                w = dlg.winfo_reqwidth()
+            if h <= 1:
+                h = dlg.winfo_reqheight()
+            sw = dlg.winfo_screenwidth()
+            sh = dlg.winfo_screenheight()
+            x = (sw - w) // 2
+            y = (sh - h) // 2
+            if x < 10: x = 10
+            if y < 10: y = 10
+            dlg.geometry(f"{w}x{h}+{x}+{y}")
+        except Exception:
+            pass
+
+    def _make_modal(self, dlg):
+        """Torna a janela modal: grab + Esc + foco + centralização."""
+        try:
+            dlg.transient(self.root)
+        except Exception:
+            pass
+        try:
+            dlg.grab_set()
+            dlg.focus_set()
+        except Exception:
+            pass
+        try:
+            dlg.bind('<Escape>', lambda e: self._close_modal(dlg))
+            dlg.protocol('WM_DELETE_WINDOW',
+                         lambda: self._close_modal(dlg))
+        except Exception:
+            pass
+        self.root.after(60, lambda: self._center_toplevel(dlg))
+
+    def _close_modal(self, dlg):
+        try:
+            if dlg.winfo_exists():
+                try:
+                    dlg.grab_release()
+                except Exception:
+                    pass
+                dlg.destroy()
+        except Exception:
+            pass
+
     def _show_about(self):
         colors = COLORS
         dlg = tk.Toplevel(self.root)
         dlg.title("ℹ️ Sobre — DarkPenBoot Pro")
         dlg.configure(bg=colors['bg'])
-        try:
-            dlg.transient(self.root)
-        except Exception:
-            pass
         dlg.resizable(True, True)
-        w, h = 560, 640
         try:
             sw = dlg.winfo_screenwidth()
             sh = dlg.winfo_screenheight()
+            w = min(600, int(sw * 0.85))
+            h = min(700, int(sh * 0.85))
             x = (sw - w) // 2
             y = max(20, (sh - h) // 2)
             dlg.geometry(f"{w}x{h}+{x}+{y}")
         except Exception:
-            dlg.geometry("560x640")
-        dlg.minsize(440, 400)
+            dlg.geometry("600x700")
+        dlg.minsize(440, 420)
+        self._make_modal(dlg)
+
         outer = tk.Frame(dlg, bg=colors['frame_bg'],
                          highlightbackground=colors['frame_border'],
                          highlightcolor=colors['accent'], highlightthickness=2)
@@ -7003,7 +7094,7 @@ class DarkPenBoot:
         outer.rowconfigure(1, weight=1)
         header = tk.Frame(outer, bg=colors['frame_bg'])
         header.grid(row=0, column=0, sticky='ew', padx=14, pady=(12, 6))
-        tk.Label(header, text=f"🔌 {APP_NAME}",
+        tk.Label(header, text=f"{LOGO_ICON} {APP_NAME}",
                  font=('Segoe UI', 15, 'bold'),
                  fg=colors['accent'], bg=colors['frame_bg']).pack(anchor='w')
         tk.Label(header,
@@ -7034,52 +7125,59 @@ class DarkPenBoot:
             widget.bind('<MouseWheel>', _about_wheel, add='+')
             widget.bind('<Button-4>', lambda e: cv.yview_scroll(-3, 'units'), add='+')
             widget.bind('<Button-5>', lambda e: cv.yview_scroll(3, 'units'), add='+')
+
+        # ── v3.6.0: PgUp/PgDown na janela Sobre ──
+        def _pgup_about(e=None):
+            try:
+                cv.yview_scroll(-8, "units")
+            except Exception:
+                pass
+            return "break"
+        def _pgdn_about(e=None):
+            try:
+                cv.yview_scroll(8, "units")
+            except Exception:
+                pass
+            return "break"
+        dlg.bind('<Prior>', _pgup_about, add='+')
+        dlg.bind('<Next>',  _pgdn_about, add='+')
+        cv.bind('<Prior>',  _pgup_about, add='+')
+        cv.bind('<Next>',   _pgdn_about, add='+')
+        body.bind('<Prior>', _pgup_about, add='+')
+        body.bind('<Next>',  _pgdn_about, add='+')
+
         desc = (
             "Criador Profissional de Pendrives Bootáveis Universais\n"
             "para Windows, Linux, macOS, Android (Termux) e OTG Mobile.\n\n"
-            "🆕 v3.4.0 — Novidades:\n"
+            "🆕 v3.6.0 — Novidades:\n"
+            "• Logo 🚀 (foguete) no lugar do 🔌\n"
+            "• PgUp/PgDown navegam em TODAS as modais\n"
+            "• Lista EXPANDIDA de ~35 distros oficiais\n"
+            "• Pulso Neon SÓ em tarefas reais\n"
+            "• Orb 3D OSCILA por todas as cores dos temas\n"
+            "• Tema geral da UI permanece ESTÁVEL\n\n"
+            "✅ v3.5.0 (mantido):\n"
+            "• Janelas modais com navegação por teclado\n"
+            "• ISOs Recentes centralizado + atalhos\n"
+            "• Registro de licença em nome do autor\n\n"
+            "✅ v3.4.0 (mantido):\n"
             "• Tema 🌙 Soft Dark (reduz fadiga visual)\n"
-            "• NixOS 24.11 + 25.05 com GOVERNANÇA oficial\n"
-            "• Aba 📚 Fontes com créditos e licenças\n"
             "• Verificação SHA256 automática pós-download\n"
             "• Botão ⭐ PREMIUM (R$ 10) sem anúncios\n\n"
-            "✅ v3.3.0 (mantido):\n"
-            "• Pulso Neon Global (UI vibra em operações)\n"
-            "• Orb 3D com rastro de neon esmaecido\n"
-            "• Logo clicável → instruções (F1)\n"
-            "• Aba 📖 Ajuda completa\n"
-            "• Seletor Extrair vs RAW com radio buttons\n\n"
-            "✅ v3.2.0 (mantido):\n"
-            "• DD não deixa mais o pendrive em RAW/sumido\n"
-            "• Downloads com User-Agent de navegador real\n\n"
             "🔧 Funcionalidades:\n"
             "• Formatação Multi-FS\n"
-            "• Modo Extração + DD bit-a-bit (com remontagem)\n"
+            "• Modo Extração + DD bit-a-bit\n"
             "• Painel de Recuperação/Reparo USB\n"
             "• Hashes: SHA256/SHA512/SHA1/MD5/SHA3-256/BLAKE2b\n"
             "• 7 temas visuais com orb neon 3D\n"
-            "• Download com CANCELAMENTO e FALLBACK\n"
-            "• Buffer adaptativo por tier USB\n"
-            "• Navegação por Tab/setas em todos os painéis\n"
-            "• Tooltips em TODOS os controles\n\n"
-            "🟣 NIXOS — ATRIBUIÇÃO E CONFORMIDADE\n"
-            "• NixOS® é marca registrada da NixOS Foundation.\n"
-            "• O DarkPenBoot Pro não é afiliado, endossado\n"
-            "  ou patrocinado pela NixOS Foundation.\n"
-            "• O projeto respeita os links oficiais, licenças\n"
-            "  e regras de governança da comunidade NixOS.\n"
-            "• Governança: nixos.org/governance/\n"
-            "• Constituição: github.com/NixOS/org\n"
-            "• Downloads: nixos.org/download/\n\n"
-            "⚖️ AVISO LEGAL\n"
-            "Este software é fornecido 'como está'. O usuário\n"
-            "é responsável pela ISO, pelo dispositivo alvo\n"
-            "e pelas permissões usadas na gravação.\n"
+            "• Download com CANCELAMENTO e FALLBACK\n\n"
+            + GENERAL_LEGAL_NOTICE
         )
         tk.Label(body, text=desc, justify=tk.LEFT, anchor='w',
                  fg=colors['fg'], bg=colors['frame_bg'],
-                 font=('Segoe UI', 9), wraplength=480).pack(
+                 font=('Segoe UI', 9), wraplength=520).pack(
                      fill=tk.X, pady=(0, 12))
+
         author_card = tk.LabelFrame(
             body, text=" 👤 Autor ",
             font=('Segoe UI', 10, 'bold'), fg=colors['accent'],
@@ -7099,59 +7197,45 @@ class DarkPenBoot:
                  font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT)
         gh_link = self._make_hyperlink(gh_row, GITHUB_URL, GITHUB_URL)
         gh_link.pack(side=tk.LEFT, padx=(8, 0))
-
-        # ⭐ v3.4.0: Hyperlink NixOS (atribuição legal)
-        nixos_row = tk.Frame(author_card, bg=colors['frame_bg'])
-        nixos_row.pack(fill=tk.X, pady=(4, 2))
-        tk.Label(nixos_row, text="🟣  NixOS:",
-                 fg=colors['label_fg'], bg=colors['frame_bg'],
-                 font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT)
-        nixos_link = self._make_hyperlink(nixos_row, NIXOS_URL, NIXOS_URL)
-        nixos_link.pack(side=tk.LEFT, padx=(8, 0))
-        tk.Label(author_card,
-                 text="(Marca registrada da NixOS Foundation — sem afiliação)",
-                 fg=colors['info'], bg=colors['frame_bg'],
-                 font=('Segoe UI', 8, 'italic')).pack(anchor='w', pady=(0, 4))
-
-        nixos_gov_row = tk.Frame(author_card, bg=colors['frame_bg'])
-        nixos_gov_row.pack(fill=tk.X, pady=(2, 2))
-        tk.Label(nixos_gov_row, text="🏛️  Governança:",
-                 fg=colors['label_fg'], bg=colors['frame_bg'],
-                 font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT)
-        gov_link = self._make_hyperlink(
-            nixos_gov_row, NIXOS_GOVERNANCE_URL, NIXOS_GOVERNANCE_URL)
-        gov_link.pack(side=tk.LEFT, padx=(8, 0))
-
         tk.Label(author_card,
                  text="⭐ Contribua com estrelas, issues e pull requests!",
                  fg=colors['info'], bg=colors['frame_bg'],
                  font=('Segoe UI', 9, 'italic'),
                  anchor='w').pack(fill=tk.X, pady=(6, 0))
-        tk.Label(body, text=f"© 2026 — {APP_AUTHOR}.",
+
+        tk.Label(body, text=f"© 2026 — {APP_AUTHOR}. Todos os direitos reservados.",
                  fg=colors['label_fg'], bg=colors['frame_bg'],
                  font=('Segoe UI', 8)).pack(pady=(6, 6))
+
         footer = tk.Frame(outer, bg=colors['frame_bg'])
         footer.grid(row=2, column=0, sticky='ew', padx=14, pady=(8, 12))
+        footer.columnconfigure(0, weight=1)
+        footer.columnconfigure(1, weight=0)
+        footer.columnconfigure(2, weight=0)
+        footer.columnconfigure(3, weight=0)
+        lic_btn = self._make_button(
+            footer, "📜 Licença",
+            self._show_license_popup,
+            kind="normal", width=130)
+        lic_btn.grid(row=0, column=0, padx=4, sticky='w')
         open_gh_btn = self._make_button(
             footer, "🌐 GitHub",
             lambda: webbrowser.open(GITHUB_URL),
             kind="primary", width=130)
-        open_gh_btn.pack(side=tk.LEFT, padx=4)
-        open_nixos_btn = self._make_button(
-            footer, "🟣 NixOS",
-            lambda: webbrowser.open(NIXOS_URL),
-            kind="normal", width=120)
-        open_nixos_btn.pack(side=tk.LEFT, padx=4)
-        close_btn = self._make_button(footer, "❌ Fechar", dlg.destroy,
-                                       kind="danger", width=110)
-        close_btn.pack(side=tk.RIGHT, padx=4)
-        dlg.bind('<Escape>', lambda e: dlg.destroy())
+        open_gh_btn.grid(row=0, column=1, padx=4)
+        close_btn = self._make_button(footer, "❌ Fechar",
+                                       lambda: self._close_modal(dlg),
+                                       kind="danger", width=120)
+        close_btn.grid(row=0, column=2, padx=4)
+        try:
+            close_btn.focus_set()
+        except Exception:
+            pass
 
     def _open_donate(self):
         dlg = tk.Toplevel(self.root)
         dlg.title("❤️ Doar via PIX")
         dlg.configure(bg=COLORS['bg'])
-        dlg.transient(self.root)
         dlg.resizable(True, True)
         sw, sh = dlg.winfo_screenwidth(), dlg.winfo_screenheight()
         w = min(780, max(560, sw - 40))
@@ -7160,6 +7244,7 @@ class DarkPenBoot:
         y = 20
         dlg.geometry(f"{w}x{h}+{x}+{y}")
         dlg.minsize(520, 520)
+        self._make_modal(dlg)
         dlg.columnconfigure(0, weight=1); dlg.rowconfigure(1, weight=1)
         tk.Label(dlg, text="❤️ Apoie o DarkPenBoot Pro", font=('Segoe UI', 16, 'bold'),
                  fg=COLORS['accent'], bg=COLORS['bg']).grid(row=0,column=0,pady=(14,6),sticky='ew')
@@ -7189,11 +7274,34 @@ class DarkPenBoot:
         tk.Label(body,text=('💡 Como doar:\n1. Copie a chave acima\n2. Abra o aplicativo do seu banco\n3. Escolha PIX → pagar com chave aleatória\n4. Cole a chave e confirme o recebedor e o valor'),font=('Segoe UI',10),fg=COLORS['info'],bg=COLORS['bg'],justify=tk.LEFT,anchor='w').pack(fill=tk.X,padx=18,pady=(2,18))
         footer=tk.Frame(dlg,bg=COLORS['bg']);footer.grid(row=2,column=0,sticky='ew',padx=12,pady=(6,12));footer.columnconfigure(0,weight=1);footer.columnconfigure(1,weight=0)
         ghb=self._make_button(footer,'🌐 Abrir GitHub',lambda:webbrowser.open(GITHUB_URL),kind='primary',width=180);ghb.grid(row=0,column=0,sticky='w');self._add_tip(ghb,'🌐 Abre o repositório oficial do projeto.')
-        close=self._make_button(footer,'❌ Fechar',dlg.destroy,kind='danger',width=140);close.grid(row=0,column=1,sticky='e');self._add_tip(close,'❌ Fecha a janela de doação.')
-        dlg.bind('<Escape>',lambda e:dlg.destroy());close.focus_set()
+        close=self._make_button(footer,'❌ Fechar',lambda: self._close_modal(dlg),kind='danger',width=140);close.grid(row=0,column=1,sticky='e');self._add_tip(close,'❌ Fecha a janela de doação.')
+        try:
+            close.focus_set()
+        except Exception:
+            pass
+
+        # ── v3.6.0: PgUp/PgDown na janela Doação ──
+        def _pgup_donate(e=None):
+            try:
+                canvas.yview_scroll(-8, "units")
+            except Exception:
+                pass
+            return "break"
+        def _pgdn_donate(e=None):
+            try:
+                canvas.yview_scroll(8, "units")
+            except Exception:
+                pass
+            return "break"
+        dlg.bind('<Prior>', _pgup_donate, add='+')
+        dlg.bind('<Next>',  _pgdn_donate, add='+')
+        canvas.bind('<Prior>', _pgup_donate, add='+')
+        canvas.bind('<Next>',  _pgdn_donate, add='+')
+        body.bind('<Prior>', _pgup_donate, add='+')
+        body.bind('<Next>',  _pgdn_donate, add='+')
 
     def refresh_drives(self):
-        self.trigger_reactive_pulse(1, 600)
+        # v3.6.0: sem pulso (não é tarefa real)
         try:
             self.log("🔍 Procurando pendrives USB...", is_info=True)
             self.drives = get_usb_drives()
@@ -7308,10 +7416,6 @@ class DarkPenBoot:
         dlg = tk.Toplevel(self.root)
         dlg.title(title)
         dlg.configure(bg=colors['bg'])
-        try:
-            dlg.transient(self.root)
-        except Exception:
-            pass
         dlg.resizable(True, True)
         try:
             sw = dlg.winfo_screenwidth()
@@ -7324,6 +7428,7 @@ class DarkPenBoot:
         except Exception:
             dlg.geometry("460x520")
         dlg.minsize(300, 360)
+        self._make_modal(dlg)
         outer = tk.Frame(dlg, bg=colors['frame_bg'],
                          highlightbackground=colors['frame_border'],
                          highlightcolor=colors['accent'], highlightthickness=2)
@@ -7344,6 +7449,7 @@ class DarkPenBoot:
                          highlightbackground=colors['frame_border'],
                          highlightcolor=colors['accent'])
         entry.pack(fill=tk.X, padx=10, ipady=8, pady=(0, 8))
+        canvas_q = None
         if default_dirs:
             has_files = False
             for d in default_dirs:
@@ -7399,15 +7505,35 @@ class DarkPenBoot:
                                             font=('Consolas', 9),
                                             command=_pick)
                             btn.pack(fill=tk.X, pady=1, padx=4)
+
+        # ── v3.6.0: PgUp/PgDown no diálogo mobile ──
+        if canvas_q is not None:
+            def _pgup_mobile(e=None):
+                try:
+                    canvas_q.yview_scroll(-8, "units")
+                except Exception:
+                    pass
+                return "break"
+            def _pgdn_mobile(e=None):
+                try:
+                    canvas_q.yview_scroll(8, "units")
+                except Exception:
+                    pass
+                return "break"
+            dlg.bind('<Prior>', _pgup_mobile, add='+')
+            dlg.bind('<Next>',  _pgdn_mobile, add='+')
+            canvas_q.bind('<Prior>', _pgup_mobile, add='+')
+            canvas_q.bind('<Next>',  _pgdn_mobile, add='+')
+
         btn_frame = tk.Frame(outer, bg=colors['frame_bg'])
         btn_frame.pack(fill=tk.X, padx=10, pady=(8, 10), side=tk.BOTTOM)
         def _ok():
             v = entry_var.get().strip()
             if v:
                 result['value'] = v
-            dlg.destroy()
+            self._close_modal(dlg)
         def _cancel():
-            dlg.destroy()
+            self._close_modal(dlg)
         ok_btn = tk.Button(btn_frame, text="✅ Confirmar", command=_ok,
                            bg=colors['accent'], fg=colors['bg'],
                            font=('Segoe UI', 10, 'bold'),
@@ -7420,13 +7546,11 @@ class DarkPenBoot:
                   relief=tk.FLAT, bd=0, cursor='hand2',
                   padx=14, pady=7).pack(side=tk.RIGHT)
         entry.bind('<Return>', lambda e: _ok())
-        dlg.bind('<Escape>', lambda e: _cancel())
         try:
             entry.focus_set()
             entry.icursor(tk.END)
         except Exception:
             pass
-        dlg.grab_set()
         dlg.wait_window()
         return result['value']
 
@@ -7452,10 +7576,6 @@ class DarkPenBoot:
         dlg = tk.Toplevel(self.root)
         dlg.title("🎯 Selecionar pendrive")
         dlg.configure(bg=colors['bg'])
-        try:
-            dlg.transient(self.root)
-        except Exception:
-            pass
         dlg.resizable(True, True)
         try:
             sw = dlg.winfo_screenwidth()
@@ -7466,6 +7586,7 @@ class DarkPenBoot:
         except Exception:
             dlg.geometry("460x480")
         dlg.minsize(320, 300)
+        self._make_modal(dlg)
         outer = tk.Frame(dlg, bg=colors['frame_bg'],
                          highlightbackground=colors['frame_border'],
                          highlightcolor=colors['accent'], highlightthickness=2)
@@ -7482,7 +7603,7 @@ class DarkPenBoot:
         list_frame.pack(fill=tk.BOTH, expand=True, padx=8)
         def _select_drive(d):
             selected['drive'] = d
-            dlg.destroy()
+            self._close_modal(dlg)
         for d in drives:
             sg = d.get('Size', 0) / (1024**3) if d.get('Size', 0) else 0
             letters = d.get('Letters') or ''
@@ -7503,7 +7624,7 @@ class DarkPenBoot:
         btn_frame = tk.Frame(outer, bg=colors['frame_bg'])
         btn_frame.pack(fill=tk.X, padx=8, pady=(0, 8))
         def _manual():
-            dlg.destroy()
+            self._close_modal(dlg)
             manual = self._mobile_path_dialog(
                 title="Caminho manual do pendrive",
                 hint="Ex: /storage/xxxx-xxxx  ou  /dev/sda1",
@@ -7514,12 +7635,11 @@ class DarkPenBoot:
                   bg=colors['button_bg'], fg=colors['button_fg'],
                   font=('Segoe UI', 9), relief=tk.FLAT, bd=0, cursor='hand2',
                   padx=10, pady=7).pack(side=tk.LEFT)
-        tk.Button(btn_frame, text="❌ Cancelar", command=dlg.destroy,
+        tk.Button(btn_frame, text="❌ Cancelar",
+                  command=lambda: self._close_modal(dlg),
                   bg=colors['cancel_bg'], fg='white',
                   font=('Segoe UI', 9, 'bold'), relief=tk.FLAT, bd=0, cursor='hand2',
                   padx=10, pady=7).pack(side=tk.RIGHT)
-        dlg.bind('<Escape>', lambda e: dlg.destroy())
-        dlg.grab_set()
         dlg.wait_window()
         if selected['drive']:
             all_drives = get_usb_drives()
@@ -7690,52 +7810,155 @@ class DarkPenBoot:
             self.log(f"⚠️ Erro no popup de ISO: {e}", is_warning=True)
 
     def _show_recent_isos(self):
+        """ISOs Recentes: modal, centralizada, navegação por teclado + PgUp/PgDown (v3.6.0)."""
         recent = load_recent_isos()
         if not recent:
             self._popup_info("Recentes", "Nenhuma ISO recente encontrada.")
             return
         dlg = tk.Toplevel(self.root)
-        dlg.title("ISOs Recentes")
-        dlg.geometry("480x300")
+        dlg.title("📋 ISOs Recentes")
         dlg.configure(bg=COLORS['bg'])
+        dlg.resizable(True, True)
         try:
-            dlg.transient(self.root)
+            sw = dlg.winfo_screenwidth()
+            sh = dlg.winfo_screenheight()
+            w = min(560, int(sw * 0.9))
+            h = min(400, int(sh * 0.7))
+            x = (sw - w) // 2
+            y = max(20, (sh - h) // 2)
+            dlg.geometry(f"{w}x{h}+{x}+{y}")
         except Exception:
-            pass
-        tk.Label(dlg, text="Selecione uma ISO recente:", fg=COLORS['fg'],
-                 bg=COLORS['bg'],
-                 font=('Segoe UI', 10, 'bold')).pack(pady=8)
-        listbox = tk.Listbox(dlg, bg=COLORS['entry_bg'],
-                              fg=COLORS['entry_fg'],
-                              font=('Consolas', 9),
-                              selectbackground=COLORS['accent'],
-                              selectforeground='black' if COLORS['bg'] == '#f4f6f8'
-                              else COLORS['bg'],
-                              relief=tk.FLAT, highlightthickness=1,
-                              highlightbackground=COLORS['frame_border'])
-        listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=4)
+            dlg.geometry("560x400")
+        dlg.minsize(420, 300)
+        self._make_modal(dlg)
+        outer = tk.Frame(dlg, bg=COLORS['frame_bg'],
+                         highlightbackground=COLORS['frame_border'],
+                         highlightcolor=COLORS['accent'], highlightthickness=2)
+        outer.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        outer.columnconfigure(0, weight=1)
+        outer.rowconfigure(1, weight=1)
+        tk.Label(outer, text="📋 ISOs Recentes",
+                 font=('Segoe UI', 13, 'bold'),
+                 fg=COLORS['accent'], bg=COLORS['frame_bg']).grid(
+                     row=0, column=0, sticky='w', padx=12, pady=(10, 4))
+        tk.Label(outer,
+                 text="Selecione uma ISO (Tab / ↑ / ↓ / PgUp / PgDown / Enter / Esc)",
+                 font=('Segoe UI', 9), fg=COLORS['label_fg'],
+                 bg=COLORS['frame_bg']).grid(
+                     row=0, column=0, sticky='w', padx=12, pady=(34, 4))
+        list_wrap = tk.Frame(outer, bg=COLORS['frame_bg'])
+        list_wrap.grid(row=1, column=0, sticky='nsew', padx=12, pady=4)
+        list_wrap.columnconfigure(0, weight=1)
+        list_wrap.rowconfigure(0, weight=1)
+        listbox = tk.Listbox(
+            list_wrap, bg=COLORS['entry_bg'], fg=COLORS['entry_fg'],
+            font=('Consolas', 9), selectbackground=COLORS['accent'],
+            selectforeground='white',
+            relief=tk.FLAT, highlightthickness=1, takefocus=True,
+            highlightbackground=COLORS['frame_border'],
+            highlightcolor=COLORS['accent'])
+        listbox.grid(row=0, column=0, sticky='nsew')
+        sb = ttk.Scrollbar(list_wrap, orient=tk.VERTICAL,
+                            command=listbox.yview, style='Vertical.TScrollbar')
+        sb.grid(row=0, column=1, sticky='ns')
+        listbox.configure(yscrollcommand=sb.set)
         for p in reversed(recent):
             listbox.insert(tk.END, p)
-        def pick():
+        if listbox.size() > 0:
+            listbox.selection_set(0)
+            listbox.activate(0)
+            listbox.see(0)
+        result = {'path': None}
+        def pick(event=None):
             sel = listbox.curselection()
             if not sel:
-                return
+                return "break"
             path = listbox.get(sel[0])
-            if os.path.exists(path):
-                self._apply_iso_selection(path, switch_tab=True)
+            result['path'] = path
+            self._close_modal(dlg)
+            return "break"
+        def _on_listbox_return(e):
+            return pick()
+        def _on_listbox_double(e):
+            return pick()
+        listbox.bind('<Return>', _on_listbox_return)
+        listbox.bind('<KP_Enter>', _on_listbox_return)
+        listbox.bind('<Double-Button-1>', _on_listbox_double)
+
+        # ── v3.6.0: PgUp/PgDown saltam 5 itens no listbox ──
+        def _pgup_recent(e=None):
+            try:
+                cur = listbox.curselection()
+                idx = (cur[0] if cur else 0) - 5
+                if idx < 0: idx = 0
+                listbox.selection_clear(0, tk.END)
+                listbox.selection_set(idx)
+                listbox.activate(idx)
+                listbox.see(idx)
+            except Exception:
+                pass
+            return "break"
+        def _pgdn_recent(e=None):
+            try:
+                cur = listbox.curselection()
+                idx = (cur[0] if cur else 0) + 5
+                if idx >= listbox.size(): idx = listbox.size() - 1
+                if idx < 0: idx = 0
+                listbox.selection_clear(0, tk.END)
+                listbox.selection_set(idx)
+                listbox.activate(idx)
+                listbox.see(idx)
+            except Exception:
+                pass
+            return "break"
+        dlg.bind('<Prior>', _pgup_recent, add='+')
+        dlg.bind('<Next>',  _pgdn_recent, add='+')
+        listbox.bind('<Prior>', _pgup_recent, add='+')
+        listbox.bind('<Next>',  _pgdn_recent, add='+')
+
+        def _listbox_tab(e):
+            try:
+                nxt = listbox.tk_focusNext()
+                if nxt:
+                    nxt.focus_set()
+            except Exception:
+                pass
+            return "break"
+        def _listbox_shift_tab(e):
+            try:
+                prv = listbox.tk_focusPrev()
+                if prv:
+                    prv.focus_set()
+            except Exception:
+                pass
+            return "break"
+        listbox.bind('<Tab>', _listbox_tab)
+        listbox.bind('<Shift-Tab>', _listbox_shift_tab)
+        listbox.bind('<ISO_Left_Tab>', _listbox_shift_tab)
+        btn_frame = tk.Frame(outer, bg=COLORS['frame_bg'])
+        btn_frame.grid(row=2, column=0, sticky='ew', padx=12, pady=(8, 10))
+        btn_frame.columnconfigure(0, weight=1)
+        btn_frame.columnconfigure(1, weight=1)
+        bu = self._make_button(btn_frame, "✔️ Usar ISO selecionada",
+                                pick, kind="primary")
+        bu.grid(row=0, column=0, padx=4, sticky='ew')
+        self._add_tip(bu, "Usa a ISO selecionada (Enter).")
+        bc = self._make_button(btn_frame, "❌ Cancelar",
+                                lambda: self._close_modal(dlg),
+                                kind="danger")
+        bc.grid(row=0, column=1, padx=4, sticky='ew')
+        self._add_tip(bc, "Fecha a janela sem selecionar (Esc).")
+        try:
+            listbox.focus_set()
+        except Exception:
+            pass
+        dlg.wait_window()
+        if result['path']:
+            if os.path.exists(result['path']):
+                self._apply_iso_selection(result['path'], switch_tab=True)
             else:
-                self.log(f"⚠️ Arquivo não existe: {path}", is_warning=True)
-            dlg.destroy()
-        btn_frame = tk.Frame(dlg, bg=COLORS['bg'])
-        btn_frame.pack(pady=8)
-        bu = self._make_button(btn_frame, "✔️ Usar", pick,
-                                kind="primary", width=100)
-        bu.pack(side=tk.LEFT, padx=4)
-        bc = self._make_button(btn_frame, "❌ Cancelar", dlg.destroy,
-                                kind="danger", width=100)
-        bc.pack(side=tk.LEFT, padx=4)
-        listbox.bind('<Double-Button-1>', lambda e: pick())
-        dlg.bind('<Escape>', lambda e: dlg.destroy())
+                self.log(f"⚠️ Arquivo não existe: {result['path']}",
+                         is_warning=True)
 
     def _show_checksums(self):
         if not self.iso_path or not os.path.isfile(self.iso_path):
@@ -7816,7 +8039,6 @@ class DarkPenBoot:
         destino = DOWNLOAD_DIR / filename
         if destino.exists() and os.path.getsize(destino) > MIN_ISO_SIZE:
             self.log(f"ℹ️ ISO já existe localmente: {destino}", is_info=True)
-            # ⭐ v3.4.0: Verificar hash antes de usar
             if distro in DISTRO_INFO:
                 self.log("🔐 Verificando SHA256 da ISO existente...",
                          is_info=True)
@@ -7835,12 +8057,6 @@ class DarkPenBoot:
                 os.remove(destino)
             except Exception:
                 pass
-        # Info sobre NixOS
-        if "NixOS" in distro:
-            self.log("🟣 NixOS — Governança oficial: nixos.org/governance/",
-                     is_info=True)
-            self.log("🟣 NixOS® é marca da NixOS Foundation — sem afiliação.",
-                     is_info=True)
         self.log(f"⬇️ Baixando {distro}...", is_info=True)
         self.log(f"📥 URL: {url}", is_info=True)
         self.is_running = True
@@ -7848,6 +8064,7 @@ class DarkPenBoot:
         self.start_btn.set_state(state=tk.DISABLED)
         self.cancel_btn.set_state(state=tk.DISABLED)
         self._set_led(COLORS['led_yellow'])
+        # v3.6.0: pulso neon só em tarefa real (download)
         self._start_global_pulse()
         self.trigger_reactive_pulse(2, 1400, "⬇️ DOWNLOAD INICIADO")
         try:
@@ -7963,7 +8180,8 @@ class DarkPenBoot:
             return
         self.log(f"🌐 Abrindo site oficial para {selection}...", is_info=True)
         webbrowser.open(url)
-        self.log("✅ Site aberto no navegador.", is_success=True)
+        self.log("✅ Site aberto no navegador (canal oficial Microsoft).",
+                 is_success=True)
 
     def _download_macos(self):
         self.log("🍏 Abrindo opções de download do macOS...", is_info=True)
@@ -8109,6 +8327,7 @@ class DarkPenBoot:
         self.start_btn.set_state(state=tk.DISABLED)
         self.cancel_btn.set_state(state=tk.NORMAL)
         self._set_led(COLORS['led_yellow'])
+        # v3.6.0: pulso neon só em tarefa real (gravação)
         self._start_global_pulse()
         try:
             if self.neon_ball is not None:
@@ -8360,7 +8579,6 @@ class DarkPenBoot:
         log_tail = self._get_log_tail(18)
         iso_name = os.path.basename(self._operation_iso or "—")
         mode = self._operation_mode or "—"
-        dd_windows = getattr(self, '_last_was_dd_windows', False)
         try:
             leave_raw_used = (self.leave_raw_var.get()
                               if hasattr(self, 'leave_raw_var') else False)
@@ -8643,7 +8861,7 @@ class DarkPenBoot:
             pass
 
     # ==================================================================
-    # PAINEL DE RECUPERAÇÃO
+    # PAINEL DE RECUPERAÇÃO — modal (v3.6.0 com PgUp/PgDown)
     # ==================================================================
     def _open_usb_recovery(self):
         drive = self.selected_drive
@@ -8665,14 +8883,9 @@ class DarkPenBoot:
         dlg = tk.Toplevel(self.root)
         dlg.title("🛠️  Recuperação e Reparo USB")
         dlg.configure(bg=colors['bg'])
-        self._start_global_pulse()
+        # v3.6.0: sem pulso global ao abrir painel
         def _on_recovery_close():
-            self._stop_global_pulse(delay_ms=200)
-            try:
-                dlg.destroy()
-            except Exception:
-                pass
-        dlg.protocol("WM_DELETE_WINDOW", _on_recovery_close)
+            self._close_modal(dlg)
         try:
             dlg.transient(self.root)
         except Exception:
@@ -8688,6 +8901,9 @@ class DarkPenBoot:
         except Exception:
             dlg.geometry("720x720")
         dlg.minsize(600, 480)
+        self._make_modal(dlg)
+        dlg.protocol("WM_DELETE_WINDOW", _on_recovery_close)
+        dlg.bind('<Escape>', lambda e: _on_recovery_close())
 
         outer = tk.Frame(dlg, bg=colors['frame_bg'],
                          highlightbackground=colors['frame_border'],
@@ -8738,6 +8954,26 @@ class DarkPenBoot:
             w_.bind('<MouseWheel>', _wheel_evt, add='+')
             w_.bind('<Button-4>', lambda e: body_canvas.yview_scroll(-3, 'units'), add='+')
             w_.bind('<Button-5>', lambda e: body_canvas.yview_scroll(3, 'units'), add='+')
+
+        # ── v3.6.0: PgUp/PgDown no painel de Recuperação ──
+        def _pgup_rec(e=None):
+            try:
+                body_canvas.yview_scroll(-8, "units")
+            except Exception:
+                pass
+            return "break"
+        def _pgdn_rec(e=None):
+            try:
+                body_canvas.yview_scroll(8, "units")
+            except Exception:
+                pass
+            return "break"
+        dlg.bind('<Prior>', _pgup_rec, add='+')
+        dlg.bind('<Next>',  _pgdn_rec, add='+')
+        body_canvas.bind('<Prior>', _pgup_rec, add='+')
+        body_canvas.bind('<Next>',  _pgdn_rec, add='+')
+        body.bind('<Prior>', _pgup_rec, add='+')
+        body.bind('<Next>',  _pgdn_rec, add='+')
 
         target_card = tk.LabelFrame(
             body, text=" 🎯 Dispositivo Alvo ",
@@ -8810,7 +9046,6 @@ class DarkPenBoot:
 
         def _do_identify():
             self.log("🔍 Identificando pendrives USB...", is_info=True)
-            self._start_global_pulse()
             try:
                 new_drives = get_usb_drives()
             except Exception as e:
@@ -8820,7 +9055,6 @@ class DarkPenBoot:
                 rec_combo['values'] = ["❌ Nenhum pendrive detectado"]
                 rec_combo.set("")
                 self.log("⚠️ Nenhum pendrive encontrado.", is_warning=True)
-                self._stop_global_pulse(delay_ms=800)
                 return
             self.drives = new_drives
             items = []
@@ -8846,7 +9080,6 @@ class DarkPenBoot:
                     self.drive_combo.current(0)
             except Exception:
                 pass
-            self._stop_global_pulse(delay_ms=800)
 
         def _on_local_combo_change(event=None):
             idx = rec_combo.current()
@@ -8862,14 +9095,10 @@ class DarkPenBoot:
         ident_btn.set_state(command=_do_identify)
         self._add_tip(ident_btn,
                       "🔍 Reexecuta a busca por pendrives USB\n"
-                      "conectados neste momento.\n\n"
-                      "Atualiza o seletor e as informações\n"
-                      "do dispositivo alvo sem fechar esta janela.\n"
-                      "⚡ Ativa PULSO NEON GLOBAL")
+                      "conectados neste momento.")
         rec_combo.bind('<<ComboboxSelected>>', _on_local_combo_change)
         self._add_tip(rec_combo,
-                      "🎯 Selecione o pendrive que deseja reparar.\n"
-                      "Troca o dispositivo alvo sem fechar a janela.")
+                      "🎯 Selecione o pendrive que deseja reparar.")
 
         try:
             init_items = []
@@ -8920,6 +9149,7 @@ class DarkPenBoot:
                     return
                 self._recovery_active = True
                 self._set_led(colors['led_yellow'])
+                # v3.6.0: pulso só em operação real (Limpar/Formatar/Reparar)
                 self._start_global_pulse()
                 try:
                     if self.neon_ball is not None:
@@ -9278,7 +9508,7 @@ class DarkPenBoot:
             "• 📁 Formatar FS: NTFS/FAT32/exFAT | ext4/3/2\n"
             "• 🔓 Remover readonly: discos write-protected\n"
             "• 🖥️ Terminal SO: abre o terminal SEM executar comando\n"
-            "• 💫 Pulso Neon Global: esta janela pulsa enquanto aberta"
+            "• ⌨️ PgUp/PgDown: rola o painel (v3.6.0)"
         )
         tk.Label(tips, text=tips_txt, justify=tk.LEFT, anchor='w',
                  fg=colors['label_fg'], bg=colors['frame_bg'],
@@ -9292,7 +9522,6 @@ class DarkPenBoot:
         close_btn.pack(side=tk.RIGHT)
         self._add_tip(close_btn, "❌ Fecha o painel de Recuperação/Reparo.")
 
-        dlg.bind('<Escape>', lambda e: _on_recovery_close())
         try:
             ident_btn.focus_set()
         except Exception:

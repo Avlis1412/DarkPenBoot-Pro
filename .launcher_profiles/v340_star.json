@@ -1,0 +1,11 @@
+{
+  "theme": "soft_dark",
+  "window_geometry": "480x820",
+  "log_level": "Detalhado",
+  "force_fsync": true,
+  "leave_raw_dd": false,
+  "buffer_override": "Auto (por tier USB)",
+  "extra_env": {
+    "DARKPENBOOT_PROFILE": "principal"
+  }
+}
