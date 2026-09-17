@@ -9,7 +9,7 @@ source.exclude_patterns = kivy_venv,venv312,tests,*.pyc,__pycache__,.git,.github
 
 version = 3.6.1
 
-requirements = python3,kivy==2.3.0,requests,urllib3,certifi
+requirements = python3,kivy==2.2.1,requests,urllib3,certifi
 
 orientation = portrait
 fullscreen = 0
