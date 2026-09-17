@@ -5,7 +5,7 @@ package.domain = org.avlis1412
 
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,kv,atlas,json,txt,md,ttf,otf,ico
-source.exclude_patterns = tests,*.pyc,__pycache__,.git,.github,build,dist,.venv,venv,env,bin,.buildozer,*.bak_*,*.bak,releases,deploy.*,fix-*.ps1,analyze.ps1,setup-*.ps1,*.spec,*.md
+source.exclude_patterns = kivy_venv,venv312,tests,*.pyc,__pycache__,.git,.github,build,dist,.venv,venv,env,bin,.buildozer,*.bak_*,*.bak,releases,deploy.*,fix-*.ps1,analyze.ps1,setup-*.ps1,*.spec,*.md
 
 version = 3.6.1
 
@@ -21,17 +21,16 @@ android.minapi = 21
 android.ndk = 25b
 android.accept_sdk_license = True
 
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 
 android.allow_backup = True
 android.wakelock = True
 android.entrypoint = org.kivy.android.PythonActivity
 
-p4a.branch = develop
 
-log_level = 2
+log_level = 1
 warn_on_root = 1
 
 [buildozer]
-log_level = 2
+log_level = 1
 warn_on_root = 1

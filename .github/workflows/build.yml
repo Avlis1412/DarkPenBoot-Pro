@@ -222,7 +222,7 @@ jobs:
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          pip install --upgrade "cython<3" buildozer
+          pip install --upgrade cython buildozer
 
       - name: Cache Buildozer
         uses: actions/cache@v4
@@ -230,12 +230,12 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
       - name: Build APK
         run: |
-          yes | buildozer -v android debug
+          yes | buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
