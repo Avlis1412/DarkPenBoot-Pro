@@ -1,29 +1,29 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
 â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
-â•‘    DARKPENBOOT PRO v3.5.0 â€” MOBILE (KIVY / ANDROID)                      â•‘
-â•‘                                                                          â•‘
-â•‘  Autor: Adriano Rodrigues da Silva                                       â•‘
-â•‘  GitHub: https://github.com/Avlis1412                                    â•‘
-â•‘                                                                          â•‘
-â•‘  VERSÃƒO MOBILE â€” Android/iOS via Kivy + Buildozer                        â•‘
-â•‘                                                                          â•‘
+║    DARKPENBOOT PRO v3.5.0 — MOBILE (KIVY / ANDROID)                      ║
+║                                                                          ║
+║  Autor: Adriano Rodrigues da Silva                                       ║
+║  GitHub: https://github.com/Avlis1412                                    ║
+║                                                                          ║
+║  VERSÃO MOBILE — Android/iOS via Kivy + Buildozer                        ║
+║                                                                          ║
 â•‘  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â•‘
-â•‘  â”‚ INSPIRAÃ‡ÃƒO NIXOS â€” Build reprodutÃ­vel via Buildozer                 â”‚  â•‘
-â•‘  â”‚ NixOSÂ® Ã© marca da NixOS Foundation (sem afiliaÃ§Ã£o)                  â”‚  â•‘
-â•‘  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â•‘
-â•‘                                                                          â•‘
-â•‘  FUNCIONALIDADES:                                                        â•‘
-â•‘   âœ… Download de distros Linux (com SHA256)                              â•‘
-â•‘   âœ… Download de ISOs Windows (link direto navegador)                    â•‘
-â•‘   âœ… VerificaÃ§Ã£o SHA256 automÃ¡tica                                       â•‘
-â•‘   âœ… SeleÃ§Ã£o de ISO local (/sdcard/Download)                             â•‘
-â•‘   âœ… DetecÃ§Ã£o de pendrive OTG                                            â•‘
-â•‘   âœ… GravaÃ§Ã£o via DD (requer ROOT)                                       â•‘
-â•‘   âœ… Log em tempo real                                                   â•‘
-â•‘   âœ… 7 temas (Matrix, Dracula, Nord, Cyberpunk, Monokai, Light, Soft)    â•‘
-â•‘                                                                          â•‘
+║  │ INSPIRAÇÃO NIXOS — Build reprodutível via Buildozer                 │  ║
+║  │ NixOS® é marca da NixOS Foundation (sem afiliação)                  │  ║
+║  └────────────────────────────────────────────────────────────────────┘  ║
+║                                                                          ║
+║  FUNCIONALIDADES:                                                        ║
+║   ✅ Download de distros Linux (com SHA256)                              ║
+║   ✅ Download de ISOs Windows (link direto navegador)                    ║
+║   ✅ Verificação SHA256 automática                                       ║
+║   ✅ Seleção de ISO local (/sdcard/Download)                             ║
+║   ✅ Detecção de pendrive OTG                                            ║
+║   ✅ Gravação via DD (requer ROOT)                                       ║
+║   ✅ Log em tempo real                                                   ║
+║   ✅ 7 temas (Matrix, Dracula, Nord, Cyberpunk, Monokai, Light, Soft)    ║
+║                                                                          ║
 â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 """
 
@@ -42,7 +42,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# â”€â”€â”€ Kivy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Kivy ─────────────────────────────────────────────────────────────
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock, mainthread
@@ -67,13 +67,13 @@ from kivy.properties import (
 )
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# DETECÃ‡ÃƒO DE PLATAFORMA
+# DETECÇÃO DE PLATAFORMA
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 IS_ANDROID = platform == 'android'
 IS_IOS = platform == 'ios'
 IS_MOBILE = IS_ANDROID or IS_IOS
 
-# â”€â”€ v3.6.1: pulso neon global â”€â”€
+# ── v3.6.1: pulso neon global ──
 GLOBAL_PULSE_STATE = {
     "active": False,
     "phase": 0,
@@ -161,7 +161,7 @@ APP_VERSION = "3.6.1"
 APP_AUTHOR = "Adriano Rodrigues da Silva"
 GITHUB_URL = "https://github.com/Avlis1412"
 
-# â”€â”€â”€ NixOS (inspiraÃ§Ã£o) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── NixOS (inspiração) ──────────────────────────────────────────────
 NIXOS_URL = "https://nixos.org"
 NIXOS_GOVERNANCE_URL = "https://nixos.org/governance/"
 NIXOS_DOWNLOAD_URL = "https://nixos.org/download/"
@@ -170,12 +170,12 @@ NIXOS_CONSTITUTION_URL = "https://github.com/NixOS/org/blob/main/doc/constitutio
 PREMIUM_PRICE_BRL = "R$ 10,00"
 PREMIUM_CHECKOUT_URL = "https://github.com/Avlis1412/DarkPenBoot-Pro#premium"
 
-# â”€â”€â”€ PIX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── PIX ─────────────────────────────────────────────────────────────
 PIX_KEY = "cc473489-9842-4fce-97e4-5a1b697aa4f3"
 PIX_RECEIVER_NAME = "ADRIANO RODRIGUES DA SILVA"
 PIX_BANK_NAME = "Santander"
 
-# â”€â”€â”€ DiretÃ³rios (mobile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Diretórios (mobile) ─────────────────────────────────────────────
 if IS_ANDROID:
     # Android: usa armazenamento externo
     BASE_DIR = Path("/sdcard/DarkPenBootPro")
@@ -196,10 +196,10 @@ for _d in (BASE_DIR, DOWNLOAD_DIR, LOG_DIR):
     except Exception:
         pass
 
-# â”€â”€â”€ Tamanhos mÃ­nimos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Tamanhos mínimos ────────────────────────────────────────────────
 MIN_ISO_SIZE = 100 * 1024 * 1024  # 100 MB
 
-# â”€â”€â”€ User-Agent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── User-Agent ──────────────────────────────────────────────────────
 BROWSER_UA = (
     "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
@@ -210,7 +210,7 @@ BROWSER_UA = (
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 THEMES = {
     "matrix": {
-        "label": "ðŸŸ¢ Matrix",
+        "label": "🟢 Matrix",
         "bg": "#040805", "fg": "#00ff41",
         "panel": "#0a1610", "border": "#00b833",
         "accent": "#00ff41", "accent2": "#00ccff",
@@ -219,7 +219,7 @@ THEMES = {
         "button": "#0f2418", "button_hover": "#1a3a24",
     },
     "dracula": {
-        "label": "ðŸ©¸ Crimson",
+        "label": "🩸 Crimson",
         "bg": "#0a0205", "fg": "#ff8095",
         "panel": "#1a0810", "border": "#ff2d55",
         "accent": "#ff4466", "accent2": "#e066ff",
@@ -237,7 +237,7 @@ THEMES = {
         "button": "#434c5e", "button_hover": "#4c566a",
     },
     "cyberpunk": {
-        "label": "âš¡ Cyberpunk",
+        "label": "⚡ Cyberpunk",
         "bg": "#08060f", "fg": "#f7e600",
         "panel": "#130d2b", "border": "#e6d800",
         "accent": "#f7e600", "accent2": "#ff007f",
@@ -246,7 +246,7 @@ THEMES = {
         "button": "#1f1240", "button_hover": "#2d1c5c",
     },
     "monokai": {
-        "label": "ðŸŸ  Monokai",
+        "label": "🟠 Monokai",
         "bg": "#1e1f1c", "fg": "#f8f8f2",
         "panel": "#272822", "border": "#75715e",
         "accent": "#fd971f", "accent2": "#ae81ff",
@@ -264,7 +264,7 @@ THEMES = {
         "button": "#e5e7eb", "button_hover": "#d1d5db",
     },
     "soft_dark": {
-        "label": "ðŸŒ™ Soft Dark",
+        "label": "🌙 Soft Dark",
         "bg": "#1e1e24", "fg": "#cdd6f4",
         "panel": "#242630", "border": "#45475a",
         "accent": "#89b4fa", "accent2": "#cba6f7",
@@ -275,7 +275,7 @@ THEMES = {
 }
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# DISTROS (idÃªnticas ao desktop â€” versÃµes atualizadas 2025)
+# DISTROS (idênticas ao desktop — versões atualizadas 2025)
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 DISTRO_INFO = {
     # ðŸŸ£ NIXOS â€” PRIORIDADE MÃXIMA
@@ -405,7 +405,7 @@ FS_LIST = ['NTFS', 'FAT32', 'exFAT', 'ext4', 'ext3', 'ext2']
 HASH_ALGOS = ['SHA256', 'SHA512', 'SHA1', 'MD5']
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# UTILITÃRIOS CORE (mesmos do desktop)
+# UTILITÁRIOS CORE (mesmos do desktop)
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 def _format_bytes(n: int) -> str:
     if n <= 0:
@@ -511,14 +511,14 @@ def add_recent_iso(path: str):
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 def download_with_fallback(url, destino, progress_cb, cancel_flag, log_cb):
     """
-    Downloader resiliente com mÃºltiplas camadas.
-    Camadas: curl â†’ wget â†’ urllib
+    Downloader resiliente com múltiplas camadas.
+    Camadas: curl → wget → urllib
     """
     log_cb(f"â¬‡ï¸ Iniciando: {url}", "info")
 
     # Camada 1: curl
     if shutil.which('curl'):
-        log_cb("ðŸ”§ Tentando via curl...", "info")
+        log_cb("🔧 Tentando via curl...", "info")
         if _download_curl(url, destino, progress_cb, cancel_flag, log_cb):
             return _post_download(destino, url, log_cb)
         if cancel_flag():
@@ -526,14 +526,14 @@ def download_with_fallback(url, destino, progress_cb, cancel_flag, log_cb):
 
     # Camada 2: wget
     if shutil.which('wget'):
-        log_cb("ðŸ”§ Tentando via wget...", "info")
+        log_cb("🔧 Tentando via wget...", "info")
         if _download_wget(url, destino, progress_cb, cancel_flag, log_cb):
             return _post_download(destino, url, log_cb)
         if cancel_flag():
             return False
 
     # Camada 3: urllib
-    log_cb("ðŸ”§ Tentando via urllib...", "info")
+    log_cb("🔧 Tentando via urllib...", "info")
     if _download_urllib(url, destino, progress_cb, cancel_flag, log_cb):
         return _post_download(destino, url, log_cb)
 
@@ -697,7 +697,7 @@ def _download_urllib(url, destino, progress_cb, cancel_flag, log_cb):
         return False
 
 def _post_download(destino, url, log_cb):
-    """Verifica se o arquivo Ã© HTML (erro) em vez de ISO."""
+    """Verifica se o arquivo é HTML (erro) em vez de ISO."""
     try:
         size = os.path.getsize(destino)
         if size < 1024 * 1024:
@@ -710,16 +710,16 @@ def _post_download(destino, url, log_cb):
                 except Exception:
                     pass
                 return False
-        log_cb(f"âœ… Download OK: {_format_bytes(size)}", "success")
+        log_cb(f"✅ Download OK: {_format_bytes(size)}", "success")
         return True
     except Exception:
         return False
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# KIVY UI â€” WIDGETS CUSTOMIZADOS
+# KIVY UI — WIDGETS CUSTOMIZADOS
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 def _ensure_linux_mkfs_tools(log_func=None):
-    """Garante que as ferramentas mkfs estejam disponÃ­veis (Android/Termux)."""
+    """Garante que as ferramentas mkfs estejam disponíveis (Android/Termux)."""
     needed = {
         'mkfs.vfat':  ['mkfs.fat', 'mkdosfs'],
         'mkfs.ntfs':  ['mkntfs', 'ntfs-3g'],
@@ -736,7 +736,7 @@ def _ensure_linux_mkfs_tools(log_func=None):
     if missing and log_func:
         log_func("âš ï¸ mkfs ausentes (Termux): " + ", ".join(missing),
                  is_warning=True)
-        log_func("   ðŸ’¡ pkg install dosfstools ntfs-3g exfatprogs e2fsprogs",
+        log_func("   💡 pkg install dosfstools ntfs-3g exfatprogs e2fsprogs",
                  is_info=True)
     return missing
 
@@ -781,11 +781,12 @@ def _scan_shell_all_platforms(log_func=None):
 
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# v3.6.1 â€” HeartPulseButton (Kivy)
-# CoraÃ§Ã£o multicolor animado com anÃ©is pulsantes
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class HeartPulseButton(Widget):
+# ───────────────────────────────────────────────────────
+# v3.6.1 — LightningPulseButton (Kivy)
+# Coração multicolor animado com anéis pulsantes
+# ───────────────────────────────────────────────────────
+class LightningPulseButton(Widget):
+    """v3.6.2 — Raio pulsante (Kivy) que oscila pelas cores dos temas."""
     def __init__(self, command=None, theme_key_getter=None, **kwargs):
         super().__init__(**kwargs)
         self._command = command
@@ -794,9 +795,8 @@ class HeartPulseButton(Widget):
         self._pressed = False
         self.size_hint = (None, None)
         self.size = (dp(54), dp(40))
-        # Label interno com o emoji
         self._label = Label(
-            text='\u2764\ufe0f',
+            text='\u26a1',
             font_size=sp(20),
             bold=True,
             halign='center',
@@ -834,16 +834,24 @@ class HeartPulseButton(Widget):
         except Exception:
             return
         palette = self._palette()
-        idx = (self._phase // 12) % len(palette)
-        col = palette[idx]
+        col = None
+        if GLOBAL_PULSE_STATE.get("active") and GLOBAL_PULSE_STATE.get("color_cycle_index") is not None:
+            try:
+                keys = list(THEMES.keys())
+                if keys:
+                    idx_theme = GLOBAL_PULSE_STATE.get("color_cycle_index", 0) % len(keys)
+                    base = THEMES[keys[idx_theme]]
+                    col = get_color_from_hex(base.get("accent", "#ff5252"))
+            except Exception:
+                col = None
+        if col is None:
+            col = palette[(self._phase // 12) % len(palette)]
         cx, cy = self.center_x, self.center_y
         with self.canvas.before:
-            # AnÃ©is pulsantes
             for i in range(6):
                 rr = dp(14) + i * dp(2.2) + dp(3) * abs(3 - (self._phase % 8))
                 Color(col[0], col[1], col[2], max(0.15, 0.7 - i * 0.1))
                 Line(circle=(cx, cy, rr), width=1.2)
-        # Atualiza cor do label
         try:
             self._label.color = col
             sz = 18 + int(2 * abs(3 - (self._phase % 8)))
@@ -870,7 +878,7 @@ class HeartPulseButton(Widget):
 
 
 class RoundedButton(Button):
-    """BotÃ£o com cantos arredondados e cores do tema."""
+    """Botão com cantos arredondados e cores do tema."""
 
     def __init__(self, bg_color="#313244", text_color="#cdd6f4",
                  radius=12, **kwargs):
@@ -889,7 +897,7 @@ class RoundedButton(Button):
         self.bind(pos=self._update_rect, size=self._update_rect)
 
     def _glassify(self, hex_color):
-        """v3.6.1: mistura a cor com o fundo (efeito translÃºcido)."""
+        """v3.6.1: mistura a cor com o fundo (efeito translúcido)."""
         try:
             h = hex_color.lstrip('#')
             r = int(h[0:2], 16); g = int(h[2:4], 16); b = int(h[4:6], 16)
@@ -932,12 +940,12 @@ class DownloadScreen(Screen):
 
 
 class ISOScreen(Screen):
-    """Tela de seleÃ§Ã£o de ISO local."""
+    """Tela de seleção de ISO local."""
     pass
 
 
 class USBScreen(Screen):
-    """Tela de detecÃ§Ã£o e gravaÃ§Ã£o em pendrive."""
+    """Tela de detecção e gravação em pendrive."""
     pass
 
 
@@ -957,7 +965,7 @@ class AboutScreen(Screen):
 class DarkPenBootKivyApp(App):
     """Aplicativo Kivy principal."""
 
-    # â”€â”€â”€ Propriedades reativas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Propriedades reativas ────────────────────────────────────
     theme_key = StringProperty('soft_dark')
     log_text = StringProperty('')
     download_progress = NumericProperty(0)
@@ -974,13 +982,13 @@ class DarkPenBootKivyApp(App):
         self._cancel_download = False
         self._download_thread = None
         self._log_lines = []
-        # â”€â”€ v3.6.1: PgUp/PgDown â”€â”€
+        # ── v3.6.1: PgUp/PgDown ──
         try:
             Window.bind(on_key_down=self._on_key_down)
         except Exception:
             pass
 
-    # â”€â”€â”€ Helpers de tema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Helpers de tema ──────────────────────────────────────────
     def get_theme(self) -> dict:
         return THEMES.get(self.theme_key, THEMES['soft_dark'])
 
@@ -991,7 +999,7 @@ class DarkPenBootKivyApp(App):
     def kivy_color(self, key: str):
         return get_color_from_hex(self.hex(key))
 
-    # â”€â”€â”€ Log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Log ──────────────────────────────────────────────────────
     def log(self, msg: str, level: str = "info"):
         ts = datetime.now().strftime("%H:%M:%S")
         line = f"[{ts}] {msg}"
@@ -1000,7 +1008,7 @@ class DarkPenBootKivyApp(App):
             self._log_lines = self._log_lines[-500:]
         self.log_text = "\n".join(self._log_lines[-200:])
 
-    # â”€â”€â”€ Build UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Build UI ─────────────────────────────────────────────────
 
 
     def _toggle_favorite(self):
@@ -1075,15 +1083,15 @@ class DarkPenBootKivyApp(App):
         self.sm.add_widget(self._build_log())
         self.sm.add_widget(self._build_about())
 
-        self.log(f"ðŸš€ {APP_NAME} v{APP_VERSION} (Kivy Mobile)", "success")
-        self.log(f"ðŸ“± Plataforma: {platform}", "info")
-        self.log("ðŸŸ£ Inspirado em NixOS â€” build reprodutÃ­vel", "info")
-        self.log("ðŸŸ£ NixOSÂ® Ã© marca da NixOS Foundation (sem afiliaÃ§Ã£o)", "info")
+        self.log(f"🚀 {APP_NAME} v{APP_VERSION} (Kivy Mobile)", "success")
+        self.log(f"📱 Plataforma: {platform}", "info")
+        self.log("🟣 Inspirado em NixOS — build reprodutível", "info")
+        self.log("🟣 NixOS® é marca da NixOS Foundation (sem afiliação)", "info")
 
-        # Aviso se nÃ£o for root
+        # Aviso se não for root
         if not _is_admin():
             self.log("âš ï¸ Sem ROOT â€” gravaÃ§Ã£o em pendrive desabilitada", "warning")
-            self.log("ðŸ’¡ Use Termux com 'tsu' para ganhar root", "info")
+            self.log("💡 Use Termux com 'tsu' para ganhar root", "info")
 
         return self.sm
 
@@ -1100,9 +1108,9 @@ class DarkPenBootKivyApp(App):
         root.bind(pos=lambda *a: setattr(bg, 'pos', root.pos),
                   size=lambda *a: setattr(bg, 'size', root.size))
 
-        # â”€â”€â”€ Header â”€â”€â”€
+        # ─── Header ───
         title = Label(
-            text=f"ðŸ”Œ DARKPENBOOT\n[color={self.hex('accent')}]PRO v{APP_VERSION}[/color]",
+            text=f"🔌 DARKPENBOOT\n[color={self.hex('accent')}]PRO v{APP_VERSION}[/color]",
             markup=True,
             font_size=sp(24),
             bold=True,
@@ -1113,7 +1121,7 @@ class DarkPenBootKivyApp(App):
         root.add_widget(title)
 
         subtitle = Label(
-            text=f"[color={self.hex('info')}]Criador de Pendrives BootÃ¡veis â€” Mobile[/color]",
+            text=f"[color={self.hex('info')}]Criador de Pendrives Bootáveis — Mobile[/color]",
             markup=True,
             font_size=sp(11),
             size_hint_y=None,
@@ -1121,12 +1129,12 @@ class DarkPenBootKivyApp(App):
         )
         root.add_widget(subtitle)
 
-        # â”€â”€â”€ BotÃµes principais â”€â”€â”€
+        # ─── Botões principais ───
         buttons = [
             ("â¬‡ï¸  Baixar Distro Linux", 'download', 'accent'),
-            ("ðŸ’¿  Selecionar ISO Local", 'iso', 'accent2'),
-            ("ðŸ”Œ  Gravar no Pendrive", 'usb', 'warning'),
-            ("ðŸ“‹  Ver Log", 'log', 'info'),
+            ("💿  Selecionar ISO Local", 'iso', 'accent2'),
+            ("🔌  Gravar no Pendrive", 'usb', 'warning'),
+            ("📋  Ver Log", 'log', 'info'),
             ("â„¹ï¸  Sobre + NixOS + PIX", 'about', 'success'),
         ]
 
@@ -1142,10 +1150,10 @@ class DarkPenBootKivyApp(App):
             btn.bind(on_release=lambda b, scr=screen: self.go_to(scr))
             root.add_widget(btn)
 
-        # â”€â”€â”€ Seletor de tema â”€â”€â”€
+        # ─── Seletor de tema ───
         theme_row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(8))
         theme_row.add_widget(Label(
-            text="ðŸŽ¨ Tema:", size_hint_x=0.3,
+            text="🎨 Tema:", size_hint_x=0.3,
             color=self.kivy_color('fg'), font_size=sp(13), bold=True,
         ))
         theme_spinner = Spinner(
@@ -1160,9 +1168,9 @@ class DarkPenBootKivyApp(App):
         theme_row.add_widget(theme_spinner)
         root.add_widget(theme_row)
 
-        # â”€â”€â”€ RodapÃ© â”€â”€â”€
+        # ─── Rodapé ───
         footer = Label(
-            text=f"[color={self.hex('info')}]ðŸŸ£ nixos.org  â€¢  "
+            text=f"[color={self.hex('info')}]🟣 nixos.org  •  "
                  f"github.com/Avlis1412[/color]",
             markup=True,
             font_size=sp(10),
@@ -1178,12 +1186,12 @@ class DarkPenBootKivyApp(App):
                 halign='center'))
 
 
-        # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ v3.6.1: rodapÃ© com coraÃ§Ã£o + doaÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ───────────── v3.6.1: rodapé com coração + doação ─────────────
         try:
             footer_row = BoxLayout(
                 orientation='horizontal',
                 size_hint_y=None, height=dp(52), spacing=dp(6))
-            # DoaÃ§Ã£o
+            # Doação
             donate = RoundedButton(
                 text="\U0001f496  DOAR VIA PIX",
                 bg_color=self.hex('button'),
@@ -1192,13 +1200,13 @@ class DarkPenBootKivyApp(App):
             )
             donate.bind(on_release=lambda b: self._open_donate())
             footer_row.add_widget(donate)
-            # CoraÃ§Ã£o pulsante
-            heart = HeartPulseButton(
+            # Coração pulsante
+            heart = LightningPulseButton(
                 command=self._toggle_favorite,
                 theme_key_getter=lambda: self.theme_key,
             )
             footer_row.add_widget(heart)
-            # AnÃºncios
+            # Anúncios
             ads_btn = RoundedButton(
                 text="\U0001f4e2  An\u00fancios",
                 bg_color=self.hex('button'),
@@ -1239,8 +1247,8 @@ class DarkPenBootKivyApp(App):
 
         # Info NixOS
         nixos_info = Label(
-            text=f"[color={self.hex('accent2')}]ðŸŸ£ NixOS 24.11 + 25.05 "
-                 f"com GOVERNANÃ‡A oficial[/color]",
+            text=f"[color={self.hex('accent2')}]🟣 NixOS 24.11 + 25.05 "
+                 f"com GOVERNANÇA oficial[/color]",
             markup=True, font_size=sp(11),
             size_hint_y=None, height=dp(24),
         )
@@ -1264,7 +1272,7 @@ class DarkPenBootKivyApp(App):
         distro_row.add_widget(self.distro_spinner)
         root.add_widget(distro_row)
 
-        # BotÃ£o baixar
+        # Botão baixar
         self.btn_download = RoundedButton(
             text="â¬‡ï¸  Baixar Distro",
             bg_color=self.hex('accent'),
@@ -1273,7 +1281,7 @@ class DarkPenBootKivyApp(App):
         )
         self.btn_download.bind(on_release=self._start_download)
         root.add_widget(self.btn_download)
-        # â”€â”€ v3.6.1: botao Site Oficial â”€â”€
+        # ── v3.6.1: botao Site Oficial ──
         btn_site = RoundedButton(
             text="ðŸŒ  Site Oficial",
             bg_color=self.hex('button'),
@@ -1309,7 +1317,7 @@ class DarkPenBootKivyApp(App):
         scroll.add_widget(self.dl_log)
         root.add_widget(scroll)
 
-        # BotÃ£o voltar
+        # Botão voltar
         back = RoundedButton(
             text="âŒ Cancelar / Voltar",
             bg_color=self.hex('button'),
@@ -1355,27 +1363,27 @@ class DarkPenBootKivyApp(App):
         filename = distro.replace(" ", "_").replace("/", "_") + ".iso"
         destino = DOWNLOAD_DIR / filename
 
-        # Verifica se jÃ¡ existe
+        # Verifica se já existe
         if destino.exists() and os.path.getsize(destino) > MIN_ISO_SIZE:
-            self.log(f"âœ… ISO jÃ¡ existe: {destino}", "success")
+            self.log(f"✅ ISO já existe: {destino}", "success")
             self.selected_iso = str(destino)
             self.user_config['last_iso'] = str(destino)
             save_config(self.user_config)
             add_recent_iso(str(destino))
-            self._show_info("Download", f"ISO jÃ¡ existe:\n{filename}")
+            self._show_info("Download", f"ISO já existe:\n{filename}")
             return
 
         self.is_downloading = True
         self._cancel_download = False
         self.btn_download.disabled = True
-        self.btn_download.text = "â³ Baixando..."
+        self.btn_download.text = "⏳ Baixando..."
 
         if "NixOS" in distro:
-            self.log("ðŸŸ£ NixOS â€” GovernanÃ§a: nixos.org/governance/", "info")
-            self.log("ðŸŸ£ NixOSÂ® marca da NixOS Foundation â€” sem afiliaÃ§Ã£o", "info")
+            self.log("🟣 NixOS — Governança: nixos.org/governance/", "info")
+            self.log("🟣 NixOS® marca da NixOS Foundation — sem afiliação", "info")
 
         self.log(f"â¬‡ï¸ Baixando {distro}...", "info")
-        self.log(f"ðŸ“¥ {url}", "info")
+        self.log(f"📥 {url}", "info")
 
         def worker():
             def progress(pct, msg):
@@ -1408,24 +1416,24 @@ class DarkPenBootKivyApp(App):
         self.btn_download.text = "â¬‡ï¸  Baixar Distro"
 
         if ok:
-            self.log(f"âœ… Download concluÃ­do: {destino}", "success")
+            self.log(f"✅ Download concluído: {destino}", "success")
             self.selected_iso = str(destino)
             self.user_config['last_iso'] = str(destino)
             save_config(self.user_config)
             add_recent_iso(str(destino))
             self.download_pb.value = 100
-            self.lbl_status.text = "âœ… Download concluÃ­do!"
+            self.lbl_status.text = "✅ Download concluído!"
             self._show_info("Sucesso", f"ISO baixada:\n{destino.name}\n\n"
-                                       f"VÃ¡ em ðŸ’¿ para usar.")
+                                       f"Vá em 💿 para usar.")
         else:
             if self._cancel_download:
-                self.log("â¹ï¸ Download cancelado", "warning")
-                self.lbl_status.text = "â¹ï¸ Cancelado"
+                self.log("⏹️ Download cancelado", "warning")
+                self.lbl_status.text = "⏹️ Cancelado"
             else:
                 self.log("âŒ Download falhou", "error")
                 self.lbl_status.text = "âŒ Falhou"
-                self._show_info("Falha", "NÃ£o foi possÃ­vel baixar.\n"
-                                          "Verifique a conexÃ£o.")
+                self._show_info("Falha", "Não foi possível baixar.\n"
+                                          "Verifique a conexão.")
 
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     # TELA ISO
@@ -1434,10 +1442,10 @@ class DarkPenBootKivyApp(App):
         s = ISOScreen(name='iso')
         root = BoxLayout(orientation='vertical', padding=dp(12), spacing=dp(8))
 
-        header = self._make_header("ðŸ’¿ Selecionar ISO", 'home')
+        header = self._make_header("💿 Selecionar ISO", 'home')
         root.add_widget(header)
 
-        # InstruÃ§Ãµes
+        # Instruções
         info = Label(
             text=f"[color={self.hex('info')}]Coloque ISOs em:\n"
                  f"{DOWNLOAD_DIR}[/color]",
@@ -1446,9 +1454,9 @@ class DarkPenBootKivyApp(App):
         )
         root.add_widget(info)
 
-        # BotÃ£o refresh
+        # Botão refresh
         btn_refresh = RoundedButton(
-            text="ðŸ”„  Atualizar lista de ISOs",
+            text="🔄  Atualizar lista de ISOs",
             bg_color=self.hex('accent'),
             text_color='#000000',
             size_hint_y=None, height=dp(48),
@@ -1456,7 +1464,7 @@ class DarkPenBootKivyApp(App):
         btn_refresh.bind(on_release=self._refresh_iso_list)
         root.add_widget(btn_refresh)
 
-        # Lista scrollÃ¡vel de ISOs
+        # Lista scrollável de ISOs
         scroll = ScrollView()
         self.iso_list = BoxLayout(
             orientation='vertical', size_hint_y=None, spacing=dp(4),
@@ -1474,9 +1482,9 @@ class DarkPenBootKivyApp(App):
         )
         root.add_widget(self.lbl_iso)
 
-        # BotÃ£o gravar
+        # Botão gravar
         btn_use = RoundedButton(
-            text="ðŸ”Œ  Usar esta ISO â†’ Pendrive",
+            text="🔌  Usar esta ISO → Pendrive",
             bg_color=self.hex('warning'),
             text_color='#000000',
             size_hint_y=None, height=dp(48),
@@ -1534,8 +1542,8 @@ class DarkPenBootKivyApp(App):
             try:
                 size = iso.stat().st_size
                 btn = RoundedButton(
-                    text=f"ðŸ’¿ {iso.name}\n"
-                         f"   {_format_bytes(size)}  â€¢  {iso.parent}",
+                    text=f"💿 {iso.name}\n"
+                         f"   {_format_bytes(size)}  •  {iso.parent}",
                     bg_color=self.hex('button'),
                     text_color=self.hex('fg'),
                     size_hint_y=None, height=dp(60),
@@ -1553,10 +1561,10 @@ class DarkPenBootKivyApp(App):
         add_recent_iso(path)
         try:
             size = os.path.getsize(path)
-            self.lbl_iso.text = f"âœ… {Path(path).name}\n{_format_bytes(size)}"
+            self.lbl_iso.text = f"✅ {Path(path).name}\n{_format_bytes(size)}"
         except Exception:
-            self.lbl_iso.text = f"âœ… {Path(path).name}"
-        self.log(f"ðŸ’¿ ISO selecionada: {path}", "success")
+            self.lbl_iso.text = f"✅ {Path(path).name}"
+        self.log(f"💿 ISO selecionada: {path}", "success")
 
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     # TELA USB
@@ -1565,7 +1573,7 @@ class DarkPenBootKivyApp(App):
         s = USBScreen(name='usb')
         root = BoxLayout(orientation='vertical', padding=dp(12), spacing=dp(8))
 
-        header = self._make_header("ðŸ”Œ Pendrive USB", 'home')
+        header = self._make_header("🔌 Pendrive USB", 'home')
         root.add_widget(header)
 
         # Aviso de ROOT
@@ -1577,9 +1585,9 @@ class DarkPenBootKivyApp(App):
         )
         root.add_widget(root_warn)
 
-        # BotÃ£o detectar
+        # Botão detectar
         btn_detect = RoundedButton(
-            text="ðŸ”„  Detectar Pendrives",
+            text="🔄  Detectar Pendrives",
             bg_color=self.hex('accent'),
             text_color='#000000',
             size_hint_y=None, height=dp(52),
@@ -1604,9 +1612,9 @@ class DarkPenBootKivyApp(App):
         )
         root.add_widget(self.usb_iso_lbl)
 
-        # BotÃ£o gravar
+        # Botão gravar
         self.btn_write = RoundedButton(
-            text="ðŸ’¾  GRAVAR ISO NO PENDRIVE",
+            text="💾  GRAVAR ISO NO PENDRIVE",
             bg_color=self.hex('error'),
             text_color='#ffffff',
             size_hint_y=None, height=dp(56),
@@ -1636,8 +1644,8 @@ class DarkPenBootKivyApp(App):
         if not drives:
             lbl = Label(
                 text="âŒ Nenhum pendrive OTG detectado\n\n"
-                     "ðŸ’¡ Conecte o pendrive via cabo OTG\n"
-                     "ðŸ’¡ Autorize o acesso quando pedido",
+                     "💡 Conecte o pendrive via cabo OTG\n"
+                     "💡 Autorize o acesso quando pedido",
                 color=self.kivy_color('warning'),
                 size_hint_y=None, height=dp(100),
                 halign='center',
@@ -1648,8 +1656,8 @@ class DarkPenBootKivyApp(App):
         for d in drives:
             sg = d.get('size', 0) / (1024**3)
             btn = RoundedButton(
-                text=f"ðŸ”Œ {d['model']}\n"
-                     f"   {d['path']}  â€¢  {sg:.1f} GB",
+                text=f"🔌 {d['model']}\n"
+                     f"   {d['path']}  •  {sg:.1f} GB",
                 bg_color=self.hex('button'),
                 text_color=self.hex('fg'),
                 size_hint_y=None, height=dp(60),
@@ -1657,7 +1665,7 @@ class DarkPenBootKivyApp(App):
             btn.bind(on_release=lambda b, dr=d: self._select_drive(dr))
             self.usb_list.add_widget(btn)
 
-        self.log(f"âœ… {len(drives)} pendrive(s) detectado(s)", "success")
+        self.log(f"✅ {len(drives)} pendrive(s) detectado(s)", "success")
 
     def _get_usb_drives_mobile(self):
         """Detecta pendrives em Android/Termux."""
@@ -1704,10 +1712,10 @@ class DarkPenBootKivyApp(App):
     def _select_drive(self, drive: dict):
         self._selected_usb = drive
         self.usb_iso_lbl.text = (
-            f"âœ… Alvo: {drive['path']}\n"
-            f"ðŸ’¿ ISO: {Path(self.selected_iso).name if self.selected_iso else '(nenhuma)'}"
+            f"✅ Alvo: {drive['path']}\n"
+            f"💿 ISO: {Path(self.selected_iso).name if self.selected_iso else '(nenhuma)'}"
         )
-        self.log(f"ðŸŽ¯ Pendrive alvo: {drive['path']}", "success")
+        self.log(f"🎯 Pendrive alvo: {drive['path']}", "success")
 
     def _start_write(self, *args):
         if not self._selected_usb:
@@ -1719,16 +1727,16 @@ class DarkPenBootKivyApp(App):
         if not _is_admin():
             self._show_info(
                 "Sem ROOT",
-                "GravaÃ§Ã£o requer privilÃ©gios de root.\n\n"
+                "Gravação requer privilégios de root.\n\n"
                 "No Termux: execute 'tsu' antes de rodar.\n"
                 "No APK: o app precisa de root.")
             return
 
-        self.log(f"ðŸ’¾ Gravando {self.selected_iso} â†’ {self._selected_usb['path']}", "warning")
+        self.log(f"💾 Gravando {self.selected_iso} → {self._selected_usb['path']}", "warning")
         self._show_info(
-            "ðŸš§ Em desenvolvimento",
-            "A gravaÃ§Ã£o via DD no mobile estÃ¡ em desenvolvimento.\n\n"
-            "Use a versÃ£o desktop para gravar no pendrive.")
+            "🚧 Em desenvolvimento",
+            "A gravação via DD no mobile está em desenvolvimento.\n\n"
+            "Use a versão desktop para gravar no pendrive.")
 
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     # TELA LOG
@@ -1737,7 +1745,7 @@ class DarkPenBootKivyApp(App):
         s = LogScreen(name='log')
         root = BoxLayout(orientation='vertical', padding=dp(12), spacing=dp(8))
 
-        header = self._make_header("ðŸ“‹ Log de OperaÃ§Ãµes", 'home')
+        header = self._make_header("📋 Log de Operações", 'home')
         root.add_widget(header)
 
         scroll = ScrollView()
@@ -1753,7 +1761,7 @@ class DarkPenBootKivyApp(App):
         scroll.add_widget(self.log_label)
         root.add_widget(scroll)
 
-        # BotÃµes
+        # Botões
         btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(6))
         btn_clear = RoundedButton(
             text="ðŸ—‘ï¸ Limpar",
@@ -1764,7 +1772,7 @@ class DarkPenBootKivyApp(App):
         btn_row.add_widget(btn_clear)
 
         btn_save = RoundedButton(
-            text="ðŸ’¾ Salvar",
+            text="💾 Salvar",
             bg_color=self.hex('accent'),
             text_color='#000000',
         )
@@ -1801,7 +1809,7 @@ class DarkPenBootKivyApp(App):
             path = LOG_DIR / f"log_{ts}.txt"
             with open(path, 'w', encoding='utf-8') as f:
                 f.write("\n".join(self._log_lines))
-            self.log(f"ðŸ’¾ Log salvo: {path}", "success")
+            self.log(f"💾 Log salvo: {path}", "success")
             self._show_info("Log salvo", str(path))
         except Exception as e:
             self.log(f"âŒ Erro: {e}", "error")
@@ -1829,26 +1837,26 @@ class DarkPenBootKivyApp(App):
             f"Autor: {APP_AUTHOR}\n"
             f"GitHub: github.com/Avlis1412\n\n"
             f"[b][color={self.hex('accent2')}]"
-            f"ðŸŸ£ INSPIRAÃ‡ÃƒO NIXOS[/color][/b]\n"
-            f"Este projeto adota princÃ­pios do NixOS:\n"
-            f"â€¢ Build reprodutÃ­vel\n"
-            f"â€¢ DependÃªncias declarativas\n"
-            f"â€¢ Isolamento total\n\n"
-            f"NixOSÂ® Ã© marca registrada da NixOS Foundation\n"
-            f"(Stichting NixOS Foundation). Sem afiliaÃ§Ã£o.\n\n"
+            f"🟣 INSPIRAÇÃO NIXOS[/color][/b]\n"
+            f"Este projeto adota princípios do NixOS:\n"
+            f"• Build reprodutível\n"
+            f"• Dependências declarativas\n"
+            f"• Isolamento total\n\n"
+            f"NixOS® é marca registrada da NixOS Foundation\n"
+            f"(Stichting NixOS Foundation). Sem afiliação.\n\n"
             f"[b][color={self.hex('accent')}]"
             f"ðŸŒ LINKS NIXOS[/color][/b]\n"
-            f"â€¢ GovernanÃ§a: nixos.org/governance/\n"
-            f"â€¢ Download: nixos.org/download/\n"
-            f"â€¢ ConstituiÃ§Ã£o:\n"
+            f"• Governança: nixos.org/governance/\n"
+            f"• Download: nixos.org/download/\n"
+            f"• Constituição:\n"
             f"  github.com/NixOS/org\n\n"
             f"[b][color={self.hex('accent')}]"
             f"âš–ï¸ LICENÃ‡AS[/color][/b]\n"
-            f"â€¢ Nixpkgs: MIT\n"
-            f"â€¢ Nix: LGPL-2.1\n"
-            f"â€¢ Logo NixOS: CC BY 4.0\n\n"
+            f"• Nixpkgs: MIT\n"
+            f"• Nix: LGPL-2.1\n"
+            f"• Logo NixOS: CC BY 4.0\n\n"
             f"[b][color={self.hex('success')}]"
-            f"â¤ï¸ APOIAR (PIX)[/color][/b]\n"
+            f"❤️ APOIAR (PIX)[/color][/b]\n"
             f"Nome: {PIX_RECEIVER_NAME}\n"
             f"Banco: {PIX_BANK_NAME}\n"
             f"Chave: {PIX_KEY}\n"
@@ -1865,13 +1873,13 @@ class DarkPenBootKivyApp(App):
                                                   lbl.texture_size[1]))
         content.add_widget(lbl)
 
-        # BotÃµes
+        # Botões
         for text, url in [
             ("ðŸŒ GitHub", GITHUB_URL),
-            ("ðŸŸ£ NixOS Governance", NIXOS_GOVERNANCE_URL),
-            ("ðŸ“¥ NixOS Download", NIXOS_DOWNLOAD_URL),
-            ("ðŸ“œ ConstituiÃ§Ã£o NixOS", NIXOS_CONSTITUTION_URL),
-            ("â­ PREMIUM R$ 10", PREMIUM_CHECKOUT_URL),
+            ("🟣 NixOS Governance", NIXOS_GOVERNANCE_URL),
+            ("📥 NixOS Download", NIXOS_DOWNLOAD_URL),
+            ("📜 Constituição NixOS", NIXOS_CONSTITUTION_URL),
+            ("⭐ PREMIUM R$ 10", PREMIUM_CHECKOUT_URL),
         ]:
             btn = RoundedButton(
                 text=text,
@@ -1937,7 +1945,7 @@ class DarkPenBootKivyApp(App):
             ),
             size_hint=(0.9, 0.5),
         )
-        # BotÃ£o fechar
+        # Botão fechar
         popup.content = BoxLayout(orientation='vertical', spacing=dp(8),
                                    padding=dp(8))
         popup.content.add_widget(Label(
@@ -1954,7 +1962,7 @@ class DarkPenBootKivyApp(App):
         popup.content.add_widget(btn)
         popup.open()
 
-    # â”€â”€â”€ Ciclo de vida â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─── Ciclo de vida ────────────────────────────────────────────
     def on_pause(self):
         """Android: pausa segura."""
         return True

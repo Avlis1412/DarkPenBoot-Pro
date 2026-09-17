@@ -1,11 +1,12 @@
 [app]
+p4a.branch = develop
 title = DarkPenBoot Pro
 package.name = darkpenboot
 package.domain = org.avlis1412
 
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,kv,atlas,json,txt,md,ttf,otf,ico
-source.exclude_patterns = kivy_venv,venv312,tests,*.pyc,__pycache__,.git,.github,build,dist,.venv,venv,env,bin,.buildozer,*.bak_*,*.bak,releases,deploy.*,fix-*.ps1,analyze.ps1,setup-*.ps1,*.spec,*.md
+source.include_exts = py,kv,png,jpg,atlas,ttf,json
+source.exclude_patterns = venv312,venv312_mobile,kivy_venv,.git,.github,build,dist,.buildozer,__pycache__,*.pyc,DarkPenBoot_PRO1.py,DPB_Launcher.py,analyze_code.py,scan_clean.ps1,scan_report.txt,run_desktop.ps1,run_mobile.ps1,setup_mobile.ps1,docs,tests,releases,.vscode,*.spec.bak,buildozer.spec.bak,requirements.txt,requirements-mobile.txt,pyproject.toml,DarkPenBoot.spec,.launcher_config.json,launch.json,build.sh,CHANGELOG.md,README_BUILD.md
 
 version = 3.6.1
 

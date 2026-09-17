@@ -4553,7 +4553,8 @@ class NeonThemeBall(tk.Canvas):
 # ==================================================================
 # 17B. HEART PULSE BUTTON — coração multicolor com fundo animado
 # ==================================================================
-class HeartPulseButton(tk.Canvas):
+class LightningPulseButton(tk.Canvas):
+    """v3.6.2 — Raio pulsante que oscila pelas cores dos temas."""
     def __init__(self, parent, command=None, width=54, height=40, **kw):
         try:
             bg = parent.cget('bg')
@@ -4606,8 +4607,19 @@ class HeartPulseButton(tk.Canvas):
         w, h = self._width, self._height
         cx, cy = w / 2, h / 2
         palette = self._palette()
-        idx = (self._phase // 12) % len(palette)
-        col = palette[idx]
+        # ── Ciclo de cores dos temas quando o pulso global está ativo ──
+        col = None
+        if GLOBAL_PULSE_STATE.get('active') and GLOBAL_PULSE_STATE.get('color_cycle_index') is not None:
+            try:
+                keys = list(THEMES_RAW.keys())
+                if keys:
+                    idx_theme = GLOBAL_PULSE_STATE.get('color_cycle_index', 0) % len(keys)
+                    base = THEMES_RAW[keys[idx_theme]]
+                    col = base.get('accent', '#ff5252')
+            except Exception:
+                col = None
+        if col is None:
+            col = palette[(self._phase // 12) % len(palette)]
         for i in range(6):
             rr = 14 + i * 2.2 + 3 * abs(3 - (self._phase % 8))
             self.create_oval(cx - rr, cy - rr, cx + rr, cy + rr,
@@ -4615,7 +4627,7 @@ class HeartPulseButton(tk.Canvas):
         size = 10 + int(2 * abs(3 - (self._phase % 8)))
         if self._pressed:
             size -= 2
-        self.create_text(cx, cy, text='\u2764\ufe0f',
+        self.create_text(cx, cy, text='\u26a1',
                          font=('Segoe UI Emoji', size, 'bold'),
                          fill=col)
 
@@ -4659,8 +4671,6 @@ class HeartPulseButton(tk.Canvas):
         super().destroy()
 
 
-# 17. ROUNDED BUTTON — v3.6.0
-# ==================================================================
 class RoundedButton(tk.Canvas):
     def __init__(self, parent, text="", command=None, kind="normal",
                  width=180, height=42, radius=21,
@@ -6218,12 +6228,12 @@ class DarkPenBoot:
             right = tk.Frame(frame, bg=COLORS['bg'])
             right.grid(row=0, column=1, sticky='e')
 
-            self.heart_btn = HeartPulseButton(
+            self.lightning_btn = LightningPulseButton(
                 right,
                 command=self._toggle_favorite,
                 width=54, height=40)
-            self.heart_btn.pack(side=tk.TOP, anchor='e', pady=(0, 3))
-            self._add_tip(self.heart_btn,
+            self.lightning_btn.pack(side=tk.TOP, anchor='e', pady=(0, 3))
+            self._add_tip(self.lightning_btn,
                           "\u2764\ufe0f Favoritar ISO atual.\n"
                           "Pulsa entre as cores do tema.")
 
@@ -8332,6 +8342,13 @@ class DarkPenBoot:
             self.log("ℹ️ Cancelamento de download abortado.", is_info=True)
             return
         self.download_cancel_requested = True
+        self.progress['value'] = 0
+        self.percent_label.config(text="0%")
+        self.status_label.config(text="\u23f9\ufe0f Cancelado", fg=COLORS['warning'])
+        self._set_led(COLORS['led_off'])
+        self.current_file_label.config(text="")
+        self._stop_global_pulse(delay_ms=500)
+        self.root.after(1500, lambda: self.status_label.config(text="\u2705 Pronto", fg=COLORS['success']))
         self.trigger_reactive_pulse(3, 800)
         self.log("⏹️ Cancelamento de download solicitado...",
                  is_warning=True)
@@ -8538,6 +8555,13 @@ class DarkPenBoot:
             self.log("ℹ️ Cancelamento abortado.", is_info=True)
             return
         self.cancel_requested = True
+        self.progress['value'] = 0
+        self.percent_label.config(text="0%")
+        self.status_label.config(text="\u23f9\ufe0f Cancelado", fg=COLORS['warning'])
+        self._set_led(COLORS['led_off'])
+        self.current_file_label.config(text="")
+        self._stop_global_pulse(delay_ms=500)
+        self.root.after(1500, lambda: self.status_label.config(text="\u2705 Pronto", fg=COLORS['success']))
         self.trigger_reactive_pulse(3, 900, "🛑 CANCELAMENTO ATIVO")
         self.log("⚠️ Cancelamento solicitado — kill em <100ms...",
                  is_warning=True)
@@ -8892,6 +8916,8 @@ class DarkPenBoot:
             dur = time.time() - self._operation_start_time
             elapsed = _format_eta(dur)
             self._operation_start_time = None
+        self.root.update_idletasks()
+        self.root.update()
         if success:
             self.trigger_reactive_pulse(3, 1800, "✅ CONCLUÍDO!")
             self.progress['value'] = 100
