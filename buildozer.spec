@@ -10,7 +10,7 @@ source.exclude_patterns = venv312,venv312_mobile,kivy_venv,.git,.github,build,di
 
 version = 3.6.1
 
-requirements = python3,kivy==2.2.1,requests,urllib3,certifi
+requirements = python3,kivy==2.3.0,requests,urllib3,certifi,charset-normalizer,idna
 
 orientation = portrait
 fullscreen = 0
