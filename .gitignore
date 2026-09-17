@@ -105,3 +105,24 @@ meu-projeto/
 
 # Virtualenvs
 venv312/
+
+# Ambientes virtuais
+venv312/
+venv312_mobile/
+kivy_venv/
+
+# Build / cache
+__pycache__/
+*.pyc
+build/
+dist/
+.buildozer/
+*.egg-info/
+
+# Relatórios locais
+scan_report.txt
+buildozer.spec.bak
+
+# VS Code launcher
+.launcher_config.json
+launch.json

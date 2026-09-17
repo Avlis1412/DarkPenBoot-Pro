@@ -1,4 +1,4 @@
-﻿# ═══════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════
 #  DarkPenBoot Pro — Varredura e Limpeza (v2 - sem aspas aninhadas)
 # ═══════════════════════════════════════════════════════════════
 $ErrorActionPreference = "Continue"
@@ -6,14 +6,14 @@ $ProjectPath = "C:\Users\adria_0kkmcbe\OneDrive\Desktop\DarkPenBoot-Pro"
 Set-Location $ProjectPath
 $ReportFile = Join-Path $ProjectPath "scan_report.txt"
 
-function Size-Of($bytes) {
+function Format-FileSize($bytes) {
     if ($bytes -ge 1GB) { return ('{0:N2} GB' -f ($bytes / 1GB)) }
     if ($bytes -ge 1MB) { return ('{0:N2} MB' -f ($bytes / 1MB)) }
     if ($bytes -ge 1KB) { return ('{0:N2} KB' -f ($bytes / 1KB)) }
     return ('{0} B' -f $bytes)
 }
 
-function Rel-Path($fullPath) {
+function Get-RelativePath($fullPath) {
     return $fullPath.Substring($ProjectPath.Length).TrimStart('\')
 }
 
@@ -27,11 +27,11 @@ foreach ($item in $rootItems) {
     if ($item.PSIsContainer) {
         $sum = (Get-ChildItem -Recurse -Force -ErrorAction SilentlyContinue $item.FullName | Measure-Object -Property Length -Sum).Sum
         if (-not $sum) { $sum = 0 }
-        Write-Host ('  [DIR]  {0,-32} {1,>10}' -f $item.Name, (Size-Of $sum))
-        ('[DIR]  ' + $item.Name + ' - ' + (Size-Of $sum)) | Out-File $ReportFile -Append -Encoding utf8
+        Write-Host ('  [DIR]  {0,-32} {1,>10}' -f $item.Name, (Format-FileSize $sum))
+        ('[DIR]  ' + $item.Name + ' - ' + (Format-FileSize $sum)) | Out-File $ReportFile -Append -Encoding utf8
     } else {
-        Write-Host ('  [FILE] {0,-32} {1,>10}' -f $item.Name, (Size-Of $item.Length))
-        ('[FILE] ' + $item.Name + ' - ' + (Size-Of $item.Length)) | Out-File $ReportFile -Append -Encoding utf8
+        Write-Host ('  [FILE] {0,-32} {1,>10}' -f $item.Name, (Format-FileSize $item.Length))
+        ('[FILE] ' + $item.Name + ' - ' + (Format-FileSize $item.Length)) | Out-File $ReportFile -Append -Encoding utf8
     }
 }
 
@@ -41,9 +41,9 @@ Write-Host "=== 2. Arquivos Python do projeto ===" -ForegroundColor Cyan
 $pyFiles = Get-ChildItem -Recurse -File -Filter "*.py" -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -notmatch '\\(venv312|venv312_mobile|kivy_venv|\.git|__pycache__|build|dist|\.buildozer)\\' }
 foreach ($f in $pyFiles) {
-    $rel = Rel-Path $f.FullName
-    Write-Host ('  {0,-50} {1,>10}' -f $rel, (Size-Of $f.Length))
-    ($rel + ' - ' + (Size-Of $f.Length)) | Out-File $ReportFile -Append -Encoding utf8
+    $rel = Get-RelativePath $f.FullName
+    Write-Host ('  {0,-50} {1,>10}' -f $rel, (Format-FileSize $f.Length))
+    ($rel + ' - ' + (Format-FileSize $f.Length)) | Out-File $ReportFile -Append -Encoding utf8
 }
 
 # ── 3. CANDIDATOS À LIMPEZA ──
@@ -118,8 +118,8 @@ foreach ($p in $toDelete) {
                 $sz = $item.Length
             }
             $totalSize += $sz
-            $rel = Rel-Path $p
-            Write-Host ('  - {0,-55} {1,>10}' -f $rel, (Size-Of $sz)) -ForegroundColor Gray
+            $rel = Get-RelativePath $p
+            Write-Host ('  - {0,-55} {1,>10}' -f $rel, (Format-FileSize $sz)) -ForegroundColor Gray
         }
     }
 }
@@ -127,11 +127,11 @@ Write-Host ""
 Write-Host "Scripts de deploy (opcional):" -ForegroundColor Yellow
 foreach ($p in $deployFiles) {
     $item = Get-Item $p -Force
-    $rel = Rel-Path $p
-    Write-Host ('  ? {0,-55} {1,>10}' -f $rel, (Size-Of $item.Length)) -ForegroundColor Yellow
+    $rel = Get-RelativePath $p
+    Write-Host ('  ? {0,-55} {1,>10}' -f $rel, (Format-FileSize $item.Length)) -ForegroundColor Yellow
 }
 Write-Host ""
-Write-Host ('Espaco total a liberar: ~' + (Size-Of $totalSize)) -ForegroundColor Yellow
+Write-Host ('Espaco total a liberar: ~' + (Format-FileSize $totalSize)) -ForegroundColor Yellow
 
 # ── 4. CRITICOS PRESERVADOS ──
 Write-Host ""
@@ -183,7 +183,7 @@ foreach ($p in $toDelete) {
         }
         $removed++
         $freed += $sz
-        $rel = Rel-Path $p
+        $rel = Get-RelativePath $p
         Write-Host ('  [DEL] ' + $rel) -ForegroundColor DarkGray
     } catch {
         Write-Host ('  [ERR] ' + $p + ' - ' + $_) -ForegroundColor Red
@@ -194,7 +194,7 @@ foreach ($p in $toDelete) {
 Write-Host ""
 Write-Host "=== 6. Resumo ===" -ForegroundColor Cyan
 Write-Host ('Itens removidos: ' + $removed) -ForegroundColor Green
-Write-Host ('Espaco liberado: ' + (Size-Of $freed)) -ForegroundColor Green
+Write-Host ('Espaco liberado: ' + (Format-FileSize $freed)) -ForegroundColor Green
 Write-Host ''
 Write-Host ('Relatorio: ' + $ReportFile) -ForegroundColor Cyan
 Write-Host ''
