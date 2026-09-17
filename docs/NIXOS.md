@@ -1,75 +1,63 @@
-# 📄 `docs/NIXOS.md` — Arquivo Completo Pronto para Colar
+Aqui está o `NIXOS.md` reescrito em estilo técnico direto, sem comentários de IA, sem excesso de emojis e sem tom de marketing.
 
-**Como fazer:**
-1. No VS Code, clique em **`docs/NIXOS.md`** no painel esquerdo
-2. Selecione tudo: `Ctrl + A`
-3. Apague: `Delete`
-4. Cole o conteúdo abaixo **COMPLETO**
-5. Salve: `Ctrl + S`
-
----
+## 📄 Novo conteúdo para `docs/NIXOS.md`
 
 ```markdown
-# 🟣 NixOS — Filosofia Aplicada ao DarkPenBoot Pro
+# NixOS — Filosofia Aplicada ao DarkPenBoot Pro
 
-> Como os princípios do NixOS influenciaram a arquitetura,
-> o build e as decisões técnicas do DarkPenBoot Pro.
+Como os princípios do NixOS influenciaram a arquitetura, o build e as
+decisões técnicas do DarkPenBoot Pro.
 
 ---
 
-## 📖 O Que é o NixOS?
+## O que é o NixOS
 
-O **NixOS** é uma distribuição Linux construída sobre o gerenciador de pacotes **Nix**. Ele foi criado em 2003 por Eelco Dolstra como parte de sua pesquisa de doutorado na Universidade de Utrecht.
+O NixOS é uma distribuição Linux construída sobre o gerenciador de pacotes
+Nix. Foi criado em 2003 por Eelco Dolstra como parte de sua pesquisa de
+doutorado na Universidade de Utrecht.
 
-### O problema que ele resolve
+O problema que ele resolve:
 
-Antes do Nix, instalar software era assim:
+Instalar software da forma tradicional envolve baixar a versão atual do
+pacote e colocá-la em `/usr/bin/`, junto com as demais. Se outro pacote
+precisa de uma versão diferente da mesma dependência, surge um conflito.
 
-1. `apt install pacote` → baixa versão atual
-2. Instala no `/usr/bin/` junto com tudo
-3. Se outro pacote precisa de versão diferente → **conflito**
-
-**O Nix resolve isso** tratando cada pacote como **função matemática pura**:
+O Nix trata cada pacote como uma função pura:
 
 ```
 pacote = função(dependências, versão)
 ```
 
-- Mesma entrada → mesma saída (hash determinístico)
-- Sem conflitos — cada pacote vive em `/nix/store/HASH-pacote/`
-- Rollback atômico — voltar a qualquer versão anterior
+- Mesma entrada produz o mesmo hash
+- Cada pacote vive em `/nix/store/HASH-pacote/`, sem colidir com outros
+- Rollback para qualquer versão anterior é atômico
 
 ---
 
-## 🎯 Os 4 Princípios Aplicados
+## Princípios aplicados no projeto
 
-### 1. Reprodutibilidade
+### Reprodutibilidade
 
-**Princípio NixOS:**
-> "Mesmo input sempre produz o mesmo output."
+No NixOS: mesmo input produz o mesmo output.
 
-**No DarkPenBoot Pro:**
+No DarkPenBoot Pro, o workflow do GitHub Actions fixa a versão do Python:
 
 ```yaml
-# .github/workflows/build.yml
 - uses: actions/setup-python@v5
   with:
-    python-version: '3.11'   # Versão FIXA, não "latest"
+    python-version: '3.11'
 ```
 
-✅ **Na prática:** Toda vez que alguém compilar a mesma versão do código, obtém o mesmo binário.
+Com a versão fixa, o build gera o mesmo binário independentemente de
+quando for executado.
 
----
+### Declaratividade
 
-### 2. Declaratividade
+No NixOS: toda a configuração do sistema em arquivos `.nix` legíveis.
 
-**Princípio NixOS:**
-> "Toda a configuração do sistema em arquivos `.nix` legíveis."
-
-**No DarkPenBoot Pro:**
+No DarkPenBoot Pro, o arquivo `build.yml` descreve todo o processo:
 
 ```yaml
-# build.yml declara TUDO
 name: Build Multiplataforma
 on:
   push:
@@ -83,75 +71,56 @@ jobs:
       - uses: actions/setup-python@v5
 ```
 
-✅ **Na prática:** Você não precisa rodar comandos manuais. Tudo está descrito em 1 arquivo.
+Não há passos manuais fora do workflow. Todo o build está descrito em um
+único arquivo versionado.
 
----
+### Isolamento
 
-### 3. Isolamento
+No NixOS: cada pacote vive em seu próprio diretório, sem conflito.
 
-**Princípio NixOS:**
-> "Cada pacote vive em seu próprio diretório, sem conflito com outros."
+No DarkPenBoot Pro, o GitHub Actions cria quatro ambientes isolados que
+rodam em paralelo:
 
-**No DarkPenBoot Pro:**
+| Runner | Ferramentas |
+|---|---|
+| Windows | Python 3.11, PyInstaller |
+| Linux | Python 3.11, PyInstaller |
+| macOS | Python 3.11, PyInstaller |
+| Android | Buildozer, Kivy |
 
-```
-GitHub Actions cria 4 ambientes ISOLADOS em paralelo:
+Uma falha no build do Windows não afeta o build do Linux.
 
-┌──────────────────┐  ┌──────────────────┐
-│ Runner Windows   │  │ Runner Linux     │
-│  • Python 3.11   │  │  • Python 3.11   │
-│  • PyInstaller   │  │  • PyInstaller   │
-│  • (nada mais)   │  │  • (nada mais)   │
-└──────────────────┘  └──────────────────┘
+### Verificabilidade
 
-┌──────────────────┐  ┌──────────────────┐
-│ Runner macOS     │  │ Runner Android   │
-│  • Python 3.11   │  │  • Buildozer     │
-│  • PyInstaller   │  │  • Kivy          │
-└──────────────────┘  └──────────────────┘
+No NixOS: cada pacote tem um hash SHA256; se não bate, está corrompido.
 
-Se o build do Windows quebrar,
-o build do Linux NÃO é afetado.
-```
-
-✅ **Na prática:** Zero conflito entre dependências. Cada build em ambiente próprio.
-
----
-
-### 4. Verificabilidade
-
-**Princípio NixOS:**
-> "Cada pacote tem um hash SHA256. Se não bate, foi corrompido."
-
-**No DarkPenBoot Pro:**
+No DarkPenBoot Pro, o `.exe` gerado recebe um hash:
 
 ```powershell
-# Após gerar o .exe, calculamos o hash
 $hash = (Get-FileHash dist/DarkPenBoot.exe -Algorithm SHA256).Hash
 $hash | Out-File dist/DarkPenBoot.exe.sha256
 ```
 
-**Você pode verificar:**
+O usuário verifica com:
 
-```bash
+```
 sha256sum -c darkpenboot.sha256
-# ✅ darkpenboot: OK
 ```
 
-✅ **Na prática:** Ninguém pode alterar o binário sem que o hash mude.
+Se alguém altera o binário, o hash diverge.
 
 ---
 
-## 🏛️ NixOS no DarkPenBoot — Implementação Prática
+## NixOS no DarkPenBoot
 
-### Distros NixOS disponíveis para download
+### Distros disponíveis para download
 
 | Versão | Lançamento | Edições |
-|--------|-----------|---------|
-| **NixOS 25.05** | Maio 2025 | GNOME, KDE Plasma 6, Minimal |
-| **NixOS 24.11 "Vicuña"** | Nov 2024 | GNOME, KDE Plasma 6, Minimal |
+|---|---|---|
+| NixOS 25.05 | Maio 2025 | GNOME, KDE Plasma 6, Minimal |
+| NixOS 24.11 "Vicuña" | Nov 2024 | GNOME, KDE Plasma 6, Minimal |
 
-**URLs oficiais usadas:**
+URLs oficiais:
 
 ```
 https://releases.nixos.org/nixos/25.05/latest-nixos-gnome-x86_64-linux.iso
@@ -161,7 +130,7 @@ https://releases.nixos.org/nixos/25.05/latest-nixos-minimal-x86_64-linux.iso
 
 ### Estrutura de build com Flakes
 
-O `flake.nix` do DarkPenBoot define:
+O `flake.nix` do projeto define o ambiente e o pacote final:
 
 ```nix
 {
@@ -173,12 +142,10 @@ O `flake.nix` do DarkPenBoot define:
           pyinstaller pillow requests
         ]);
       in {
-        # Ambiente de desenvolvimento
         devShells.default = pkgs.mkShell {
           buildInputs = [ python ];
         };
 
-        # Pacote final
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "darkpenboot";
           version = "3.5.0";
@@ -190,232 +157,172 @@ O `flake.nix` do DarkPenBoot define:
 }
 ```
 
-**Comandos Nix:**
+Comandos Nix:
 
-```bash
-nix develop          # Entra no ambiente de dev
-nix build            # Compila o binário
-nix flake show       # Lista todos os outputs
+```
+nix develop       # entra no ambiente de desenvolvimento
+nix build         # compila o binário
+nix flake show    # lista os outputs do flake
 ```
 
 ---
 
-## 🏛️ Governança NixOS — Respeito e Atribuição
+## Governança do NixOS
 
-### Estrutura Organizacional
+O NixOS é governado por dois órgãos.
 
-O NixOS é governado por 2 órgãos principais:
+### Foundation Board
 
-#### 1. Foundation Board
+Responsável por assuntos legais, financeiros e administrativos.
 
-- **Função:** Assuntos legais, financeiros e administrativos
-- **Site:** https://nixos.org/community/teams/foundation-board
-- **Natureza:** Stichting (fundação holandesa sem fins lucrativos)
+- https://nixos.org/community/teams/foundation-board
+- Stichting (fundação holandesa sem fins lucrativos)
 
-#### 2. Steering Committee
+### Steering Committee
 
-- **Função:** Direção técnica do projeto
-- **Site:** https://nixos.org/community/teams/steering-committee
-- **Composição:** Eleita pela comunidade
+Responsável pela direção técnica do projeto.
 
-### Constituição NixOS
+- https://nixos.org/community/teams/steering-committee
+- Composição eleita pela comunidade
 
-Documento que define:
+### Constituição
 
-- Direitos e deveres dos contribuidores
-- Processo de decisão técnica
-- Estrutura de governança
-- **Link:** https://github.com/NixOS/org/blob/main/doc/constitution.md
+Documento que define direitos e deveres dos contribuidores, processo de
+decisão técnica e estrutura de governança.
+
+https://github.com/NixOS/org/blob/main/doc/constitution.md
 
 ---
 
-## ⚖️ Aviso Legal e Trademark
+## Marca e aviso legal
 
-### Uso respeitoso do nome "NixOS"
+NixOS é uma marca registrada da NixOS Foundation (Stichting NixOS
+Foundation), organização sem fins lucrativos registrada na Holanda.
 
-**NixOS®** é uma **marca registrada** da **NixOS Foundation** (Stichting NixOS Foundation), organização sem fins lucrativos registrada na Holanda.
+O DarkPenBoot Pro:
 
-### O que o DarkPenBoot Pro faz
+- Menciona NixOS em contexto informativo
+- Oferece ISOs oficiais via links para `releases.nixos.org`
+- Atribui a marca à NixOS Foundation
+- Adota princípios de build, sem copiar código
+- Não afirma ser afiliado, endossado ou patrocinado pela NixOS Foundation
+- Não usa o logo NixOS
+- Não modifica as ISOs originais
+- Não hospeda espelhos não oficiais
+- Não vende produtos NixOS
 
-- ✅ **Menciona** NixOS em contexto informativo
-- ✅ **Oferece** ISOs oficiais para download (linkando para `releases.nixos.org`)
-- ✅ **Atribui** corretamente a marca à NixOS Foundation
-- ✅ **Adota** princípios de build (não copia código)
-- ✅ **Reconhece** a comunidade NixOS
+Texto oficial de aviso:
 
-### O que o DarkPenBoot Pro NÃO faz
-
-- ❌ **Não afirma** ser afiliado à NixOS Foundation
-- ❌ **Não usa** o logo NixOS sem atribuição
-- ❌ **Não modifica** as ISOs originais
-- ❌ **Não hospeda** espelhos não-oficiais
-- ❌ **Não vende** produtos NixOS
-
-### Texto oficial de aviso
-
-> **NixOS®** é uma marca registrada da **NixOS Foundation** (Stichting NixOS Foundation), organização sem fins lucrativos na Holanda.
+> NixOS® é uma marca registrada da NixOS Foundation (Stichting NixOS
+> Foundation), organização sem fins lucrativos na Holanda.
 >
-> O **DarkPenBoot Pro NÃO é afiliado, endossado ou patrocinado** pela NixOS Foundation. A menção honrosa se dá pelo uso da filosofia declarativa em nosso projeto e pelo respeito à comunidade NixOS.
+> O DarkPenBoot Pro não é afiliado, endossado ou patrocinado pela NixOS
+> Foundation. A menção se dá pelo uso da filosofia declarativa no projeto
+> e pelo respeito à comunidade NixOS.
 
 ---
 
-## 📜 Licenças dos Componentes NixOS
+## Licenças dos componentes NixOS
 
 | Componente | Licença | Link |
-|------------|---------|------|
-| **Nixpkgs** | MIT | [github.com/NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/COPYING) |
-| **Nix (gerenciador)** | LGPL-2.1 | [github.com/NixOS/nix](https://github.com/NixOS/nix/blob/master/COPYING) |
-| **Logo NixOS** | CC BY 4.0 | [nixos.org/branding](https://nixos.org/branding) |
-| **Documentação** | CC BY-SA 4.0 | [nixos.org](https://nixos.org) |
+|---|---|---|
+| Nixpkgs | MIT | https://github.com/NixOS/nixpkgs/blob/master/COPYING |
+| Nix (gerenciador) | LGPL-2.1 | https://github.com/NixOS/nix/blob/master/COPYING |
+| Logo NixOS | CC BY 4.0 | https://nixos.org/branding |
+| Documentação | CC BY-SA 4.0 | https://nixos.org |
 
 ---
 
-## 🌐 Links Oficiais
+## Links oficiais
 
-### Site e Documentação
+Site e documentação:
 
-- 🌐 [nixos.org](https://nixos.org) — Site oficial
-- 📖 [Manual NixOS](https://nixos.org/manual/nixos/stable/) — Documentação
-- 📥 [Download](https://nixos.org/download/) — ISOs oficiais
-- 📦 [Releases](https://releases.nixos.org/) — CDN de releases
+- https://nixos.org — site oficial
+- https://nixos.org/manual/nixos/stable/ — manual
+- https://nixos.org/download/ — ISOs oficiais
+- https://releases.nixos.org/ — CDN de releases
 
-### Governança e Comunidade
+Governança e comunidade:
 
-- 🏛️ [Governança](https://nixos.org/governance/) — Órgãos decisórios
-- 📜 [Constituição](https://github.com/NixOS/org/blob/main/doc/constitution.md) — Documento oficial
-- 💬 [Discourse](https://discourse.nixos.org/) — Fórum
-- 💬 [Matrix](https://matrix.to/#/#nixos:nixos.org) — Chat
+- https://nixos.org/governance/ — órgãos decisórios
+- https://github.com/NixOS/org/blob/main/doc/constitution.md — constituição
+- https://discourse.nixos.org/ — fórum
+- https://matrix.to/#/#nixos:nixos.org — chat
 
-### Código-Fonte
+Código-fonte:
 
-- 💻 [Nixpkgs](https://github.com/NixOS/nixpkgs) — Repositório principal
-- 💻 [Nix](https://github.com/NixOS/nix) — Gerenciador de pacotes
-- 💻 [NixOS](https://github.com/NixOS/nixpkgs/tree/master/nixos) — Distribuição
-
----
-
-## 🤔 Por que não usamos Nix no DarkPenBoot?
-
-**Pergunta justa.** Aqui está a resposta honesta:
-
-### Vantagens que teríamos
-
-- ✅ Build 100% reprodutível
-- ✅ Zero conflitos de dependências
-- ✅ Rollback atômico
-- ✅ Isolamento perfeito
-
-### Por que não aplicamos (ainda)
-
-- ⚠️ **Curva de aprendizado:** Nix tem linguagem própria (Nix Expression Language)
-- ⚠️ **Distribuição:** Nem todo usuário tem Nix instalado
-- ⚠️ **Tamanho:** Python + Tkinter + PyInstaller via Nix é ~500 MB
-- ⚠️ **Complexidade:** PyInstaller + Nix cross-compilation é frágil
-
-### O que fazemos em vez disso
-
-Adotamos os **princípios** (isolamento, reprodutibilidade) usando **ferramentas padrão**:
-
-- GitHub Actions substitui Nix para CI/CD
-- PyInstaller substitui `nix build` para empacotamento
-- SHA256 do PyInstaller substitui hash do `/nix/store`
-
-**Resultado:** 90% dos benefícios com 10% da complexidade.
-
-### Roadmap futuro
-
-- [ ] Adicionar `flake.nix` completo (parcialmente feito)
-- [ ] Publicar no Nixpkgs oficial
-- [ ] Suporte a `nix run github:Avlis1412/DarkPenBoot-Pro`
-- [ ] Imagem Docker com Nix
+- https://github.com/NixOS/nixpkgs — repositório principal
+- https://github.com/NixOS/nix — gerenciador de pacotes
 
 ---
 
-## 📚 Leitura Recomendada
+## Por que o projeto não usa Nix diretamente
 
-### Artigos sobre Nix
+O Nix oferece vantagens claras:
 
-- [NixOS: A Purely Functional Linux Distribution](https://edolstra.github.io/pubs/phd-thesis.pdf) — Tese de doutorado de Eelco Dolstra
-- [How Nix Works](https://nixos.org/guides/how-nix-works.html) — Guia oficial
+- Build 100% reprodutível
+- Zero conflitos de dependências
+- Rollback atômico
+- Isolamento completo
 
-### Vídeos
+O projeto não adota Nix como ferramenta principal por quatro motivos:
 
-- [NixOS: From Zero to Hero](https://www.youtube.com/watch?v=6L0lLL7jRZ0) — Tutorial
-- [Why Nix is the Future of DevOps](https://www.youtube.com/watch?v=6gD-0UzFd8c) — Palestra
+- Curva de aprendizado: Nix tem linguagem própria (Nix Expression Language)
+- Distribuição: nem todo usuário tem Nix instalado
+- Tamanho: Python + Tkinter + PyInstaller via Nix ocupa cerca de 500 MB
+- Complexidade: PyInstaller com cross-compilation via Nix é frágil
 
-### Livros
+Em vez disso, os princípios são aplicados com ferramentas padrão:
 
-- *NixOS in Production* — Gabriella Gonzalez
-- *Nix Pills* — Luca Bruno
+- GitHub Actions no lugar de Nix para CI/CD
+- PyInstaller no lugar de `nix build` para empacotamento
+- SHA256 do PyInstaller no lugar do hash do `/nix/store`
+
+O resultado são os principais benefícios com menos complexidade.
+
+### Roadmap
+
+- Adicionar `flake.nix` completo
+- Publicar no Nixpkgs oficial
+- Suporte a `nix run github:Avlis1412/DarkPenBoot-Pro`
+- Imagem Docker com Nix
 
 ---
 
-## 🙏 Agradecimentos
+## Leitura recomendada
 
-Agradecemos à **NixOS Foundation** e à **comunidade NixOS** pela inspiração.
+Artigos:
 
-Agradecemos também a **Eelco Dolstra** pela criação do Nix e por tornar builds reprodutíveis uma realidade.
+- NixOS: A Purely Functional Linux Distribution — tese de Eelco Dolstra
+  https://edolstra.github.io/pubs/phd-thesis.pdf
+- How Nix Works
+  https://nixos.org/guides/how-nix-works.html
+
+Vídeos:
+
+- NixOS: From Zero to Hero
+  https://www.youtube.com/watch?v=6L0l7jRZ0
+- Why Nix is the Future of DevOps
+  https://www.youtube.com/watch?v=6gD-0UzFd8c
+
+Livros:
+
+- NixOS in Production, de Gabriella Gonzalez
+- Nix Pills, de Luca Bruno
+
+---
+
+## Agradecimentos
+
+À NixOS Foundation e à comunidade NixOS pela inspiração. A Eelco Dolstra
+pela criação do Nix e por tornar builds reprodutíveis uma realidade.
 
 > "Mesmo input, mesmo output."
 > — Filosofia Nix
 
 ---
 
-**📅 Última atualização:** v3.5.0
-**👤 Autor:** Adriano Rodrigues da Silva
-**🟣 Inspirado em:** [nixos.org](https://nixos.org)
+Última atualização: v3.5.0
+Autor: Adriano Rodrigues da Silva
+Inspirado em: https://nixos.org
 ```
-
----
-
-## ✅ Depois de colar
-
-### 1. Salvar
-Pressione **`Ctrl + S`**
-
-### 2. Verificar preview
-Clique no ícone **"Open Preview"** no topo do VS Code (aquele com lupa) para ver como ficou renderizado. Deve mostrar um documento bonito com seções, tabelas e emojis.
-
-### 3. Commit + Push no GitHub Desktop
-1. Abra o GitHub Desktop
-2. Aba **Changes** — você verá **3 arquivos modificados**:
-   - `README.md`
-   - `docs/ARQUITETURA.md`
-   - `docs/NIXOS.md`
-3. **Summary:** `docs: adiciona README, ARQUITETURA e NIXOS completos`
-4. Clique em **Commit to main**
-5. Clique em **Push origin**
-
-### 4. Ver no GitHub
-Abra: **https://github.com/Avlis1412/DarkPenBoot-Pro/tree/main/docs**
-
-Você verá os 2 arquivos lá, com o conteúdo renderizado bonito.
-
----
-
-## 🎁 BÔNUS — Se quiser preencher MAIS arquivos
-
-Depois disso, sua pasta raiz ainda tem alguns arquivos vazios (0 bytes):
-
-| Arquivo | Serve para | Prioridade |
-|---------|-----------|:----------:|
-| `LICENSE` | Licença MIT oficial | 🔴 Alta |
-| `CHANGELOG.md` | Histórico de versões | 🟡 Média |
-| `pyproject.toml` | Metadata Python | 🟡 Média |
-| `requirements.txt` | Deps Python | 🟢 Baixa |
-| `flake.nix` | Build Nix real | 🟢 Baixa |
-| `shell.nix` | Ambiente dev Nix | 🟢 Baixa |
-
-**Minha recomendação:** assim que terminar os docs, faz o **`LICENSE`** (obrigatório para qualquer repo público) e o **`CHANGELOG.md`** (profissionalismo).
-
----
-
-## 🎬 O QUE FAZER AGORA
-
-1. **Cole o `NIXOS.md`** acima no arquivo
-2. **Salve** (`Ctrl + S`)
-3. **Me diga:** `"SALVEI"`
-4. Aí você faz o **commit + push** dos 3 arquivos juntos
-5. **Me manda um print** do GitHub mostrando os docs renderizados! 🎯
-
-Bora! 🚀

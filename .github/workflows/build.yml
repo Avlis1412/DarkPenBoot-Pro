@@ -1,4 +1,4 @@
-﻿# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
 # DARKPENBOOT PRO — GitHub Actions — Build Multi-Plataforma
 # ═══════════════════════════════════════════════════════════════════════════
 #
@@ -209,7 +209,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install system dependencies
         run: |
@@ -230,7 +230,7 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-v6-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v8-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
       - name: Build APK

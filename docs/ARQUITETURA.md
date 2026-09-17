@@ -1,105 +1,81 @@
-# 📄 `docs/ARQUITETURA.md` — Arquivo Completo Pronto para Colar
+Aqui está o `ARQUITETURA.md` reescrito em estilo **técnico direto**, sem os comentários "gerados por IA" (aqueles rótulos tipo "Decisão arquitetural:", "Por que existe:", excesso de emojis e tom de marketing).
 
-**Como fazer:**
-1. No VS Code, clique em **`docs/ARQUITETURA.md`** no painel esquerdo
-2. Selecione tudo: `Ctrl + A`
-3. Apague: `Delete`
-4. Cole o conteúdo abaixo **COMPLETO**
-5. Salve: `Ctrl + S`
+## 📄 Novo conteúdo para `docs/ARQUITETURA.md`
 
----
+Copie tudo abaixo, cole no arquivo e salve:
 
 ```markdown
-# 🏗️ Arquitetura — DarkPenBoot Pro v3.5.0
+# Arquitetura — DarkPenBoot Pro
 
-> Documento técnico sobre a arquitetura interna do DarkPenBoot Pro.
-> Como cada camada interage, quais decisões foram tomadas e por quê.
-
----
-
-## 📖 Visão Geral
-
-O DarkPenBoot Pro foi desenhado com princípios de **separação de responsabilidades** e **modularidade em arquivo único**. Mesmo sendo distribuído como um script Python único (para facilitar distribuição), o código segue uma **arquitetura em camadas** clara.
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    DARKPENBOOT PRO                            │
-│                                                               │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  CAMADA 5 — UI (Interface do Usuário)                  │  │
-│  │  • Tkinter (desktop) · Kivy (mobile)                   │  │
-│  │  • Temas, animações, widgets customizados              │  │
-│  └──────────────────────┬─────────────────────────────────┘  │
-│                         │                                    │
-│  ┌──────────────────────▼─────────────────────────────────┐  │
-│  │  CAMADA 4 — CORE (Lógica de Negócio)                   │  │
-│  │  • Download · Gravação · Formatação · Validação        │  │
-│  └──────────────────────┬─────────────────────────────────┘  │
-│                         │                                    │
-│  ┌──────────────────────▼─────────────────────────────────┐  │
-│  │  CAMADA 3 — PLATFORM (Adaptação por SO)                │  │
-│  │  • Windows · Linux · macOS · Android · iOS             │  │
-│  └──────────────────────┬─────────────────────────────────┘  │
-│                         │                                    │
-│  ┌──────────────────────▼─────────────────────────────────┐  │
-│  │  CAMADA 2 — SYSTEM (Utilitários do Sistema)            │  │
-│  │  • subprocess · ctypes · fsync · permissões            │  │
-│  └──────────────────────┬─────────────────────────────────┘  │
-│                         │                                    │
-│  ┌──────────────────────▼─────────────────────────────────┐  │
-│  │  CAMADA 1 — CONSTANTS (Configuração)                   │  │
-│  │  • Temas · Distros · Limites · URLs                    │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
-```
+Documento técnico sobre a organização interna do projeto: como as camadas
+se comunicam, quais decisões foram tomadas e por quê.
 
 ---
 
-## 🧩 Camadas Detalhadas
+## Visão Geral
 
-### Camada 1 — Constants (Configuração)
+O DarkPenBoot Pro é distribuído como um script Python único, mas internamente
+segue uma arquitetura em camadas. A escolha de arquivo único é deliberada:
+facilita distribuição e evita problemas de importação no Buildozer.
 
-**Arquivos:** topo do `DarkPenBoot_PRO1.py`
+```
+┌──────────────────────────────────────────────┐
+│  UI         Tkinter (desktop) · Kivy (mobile)│
+├──────────────────────────────────────────────┤
+│  Core       download · gravação · formatação │
+├──────────────────────────────────────────────┤
+│  Platform   windows · linux · mac · android  │
+├──────────────────────────────────────────────┤
+│  System     subprocess · ctypes · fsync      │
+├──────────────────────────────────────────────┤
+│  Constants  temas · distros · limites · URLs │
+└──────────────────────────────────────────────┘
+```
 
-**Responsabilidade:** Todos os valores imutáveis do sistema ficam aqui. Zero lógica, apenas dados.
+Cada camada só depende das camadas abaixo. Não há dependência circular.
 
-| Constante | Descrição |
-|-----------|-----------|
-| `APP_NAME`, `APP_VERSION` | Metadados da aplicação |
-| `THEMES` | 7 temas (dict com cores) |
-| `DISTRO_INFO` | 30+ distros Linux com URLs oficiais |
-| `WINDOWS_OPTIONS` | Links para Microsoft |
-| `MIN_ISO_SIZE` | 100 MB (tamanho mínimo para ISO) |
-| `BROWSER_UA` | User-Agent rotativo |
+---
+
+## Camadas
+
+### Constants
+
+Fica no topo do `DarkPenBoot_PRO1.py`. Só dados, nenhuma lógica.
+
+| Constante | Uso |
+|---|---|
+| `APP_NAME`, `APP_VERSION` | Metadados |
+| `THEMES` | Sete temas em formato dict |
+| `DISTRO_INFO` | Distros Linux com URLs oficiais |
+| `WINDOWS_OPTIONS` | Links da Microsoft |
+| `MIN_ISO_SIZE` | Mínimo de 100 MB para aceitar ISO |
+| `BROWSER_UA` | User-Agent usado nos downloads |
 | `SKIP_DIRS`, `SKIP_FILES` | Filtros de arquivos temporários |
-| `NIXOS_*` | URLs e aviso legal NixOS |
 
-**Por que existe:** Centraliza valores. Mudar uma cor, URL ou limite em **1 lugar** reflete em todo o app.
+Mudar uma cor, URL ou limite em um único lugar reflete em todo o app.
 
----
+### System
 
-### Camada 2 — System (Utilitários do Sistema)
+Utilitários que dependem do SO mas são usados por todas as plataformas.
 
-**Componentes principais:**
-- `run_hidden()` — Executa comandos sem janela (Windows)
-- `_get_all_drive_letters()` — Lista drives via `kernel32.GetLogicalDrives()`
-- `_force_assign_letter_to_iso()` — Força letra em ISO montada (PowerShell)
-- `_long_path()` — Suporta caminhos > 260 chars no Windows
-- `_get_free_space()` — Espaço livre cross-platform
+- `run_hidden()` — executa comandos sem abrir janela (Windows)
+- `_get_all_drive_letters()` — lista drives via `kernel32.GetLogicalDrives()`
+- `_long_path()` — suporta caminhos > 260 caracteres no Windows
+- `_get_free_space()` — espaço livre em qualquer SO
+- `_force_assign_letter_to_iso()` — força letra de unidade em ISO montada
 
-**Decisão arquitetural:** Isolar código específico de SO (ex: `ctypes.windll.kernel32`) nessa camada permite que a **Camada 4 (Core)** não saiba se está no Windows ou Linux.
+O código específico de SO fica isolado aqui para que a camada Core não
+precise saber se está no Windows ou Linux.
 
----
+### Platform
 
-### Camada 3 — Platform (Adaptação por SO)
+Cada SO tem funções com sufixo próprio:
 
-**Estrutura:** cada SO tem sua própria função com sufixo:
 - `_get_usb_drives_windows()`, `_get_usb_drives_linux()`, `_get_usb_drives_mac()`
 - `_format_usb_windows()`, `_format_usb_linux()`, `_format_usb_mac()`
 - `_mount_iso_windows()`, `_mount_iso_linux()`, `_mount_iso_mac()`
 
-**Fábrica central:**
+Uma função fábrica escolhe a implementação correta:
 
 ```python
 def get_usb_drives():
@@ -114,334 +90,236 @@ def get_usb_drives():
     return []
 ```
 
-**Técnicas por SO:**
-
 | SO | Detecção USB | Formatação | Gravação DD | Montagem ISO |
-|----|--------------|-----------|-------------|--------------|
+|---|---|---|---|---|
 | Windows | PowerShell + WMI | `diskpart` | `CreateFileW` | `Mount-DiskImage` |
 | Linux | `lsblk -J` | `parted` + `mkfs` | `os.open(O_DIRECT)` | `mount -o loop` |
 | macOS | `diskutil -plist` | `diskutil` | `os.open(rdisk)` | `hdiutil attach` |
-| Android | `/storage` + `/dev/block` | (via terminal) | (requer root) | (montagem nativa) |
+| Android | `/storage` + `/dev/block` | via terminal | requer root | montagem nativa |
 
----
+### Core
 
-### Camada 4 — Core (Lógica de Negócio)
+Lógica de negócio independente de SO.
 
-**Componentes principais:**
+#### Downloader
 
-#### 4.1 — Downloader (5 camadas de fallback)
-
-```
-URL primária
-    │
-    ├─► curl (UA Chrome)  ──❌──┐
-    │                            │
-    ├─► curl (UA Firefox) ──❌──┤
-    │                            │
-    ├─► wget ──────────────❌──┼──► Falha
-    │                            │
-    ├─► urllib (SSL) ──────❌──┤
-    │                            │
-    └─► urllib (SSL off) ──❌──┘
-
-    ✅ Sucesso → Valida SHA256 → Salva
-```
-
-**Validações pós-download:**
-1. Arquivo > 100 MB (`MIN_ISO_SIZE`)
-2. Não é HTML (`_is_html_response()`)
-3. SHA256 bate (se registrado)
-4. Se falhar → renomeia para `.parcial`
-
-#### 4.2 — Formatador USB
-
-Ordem de operações (Windows):
+Cinco camadas em sequência, cada uma tentada antes de passar para a próxima:
 
 ```
-1. Detectar disco alvo (nunca disco 0)
+curl (UA Chrome)
+curl (UA Firefox)
+wget
+urllib (SSL verificado)
+urllib (SSL desabilitado)
+```
+
+Depois de baixar:
+1. Verifica se é maior que 100 MB
+2. Verifica se não é uma página HTML (isso indica erro de URL)
+3. Calcula SHA256 e compara com o esperado (se registrado)
+4. Se falhar, renomeia para `.parcial` em vez de apagar
+
+#### Formatador USB
+
+Ordem de operações no Windows:
+
+```
+1. Detectar disco alvo (bloquear disco 0)
 2. Desmontar partições existentes
-3. Limpar tabela (clean)
-4. Criar tabela nova (MBR ou GPT)
-5. Criar partição com alinhamento
-6. Formatar (NTFS/FAT32/exFAT)
-7. Ativar partição (se MBR)
-8. Atribuir letra
-9. Aguardar disponibilidade
+3. clean (apaga tabela de partição)
+4. convert mbr|gpt
+5. create partition primary align=1024
+6. format fs=ntfs|fat32|exfat quick
+7. active (só para MBR)
+8. assign (letra)
+9. aguardar drive aparecer
 ```
 
-#### 4.3 — Escritor DD
+#### Escritor DD
 
-Algoritmo em blocos com cancelamento a cada **512 KB**:
+Blocos de 16 MB, com checagem de cancelamento a cada 512 KB:
 
 ```python
 with open(iso_path, "rb") as src:
-    while chunk := src.read(buf_size):  # 16 MB
-        for sub_chunk in split(chunk, 512 KB):  # Cancel check
+    while chunk := src.read(buf_size):
+        for sub_chunk in split(chunk, 512 * 1024):
             if cancel_requested():
                 return False
             device.write(sub_chunk)
 ```
 
-**Reabertura de handle** (`errno == 9`):
-- Se Windows invalidar o handle (após `diskpart offline`), tenta reabrir
-- Máximo 5 tentativas
-- Rebusca o ponto de escrita com `device.seek(written)`
+Se o Windows invalidar o handle no meio da gravação (errno 9), o writer
+tenta reabrir o dispositivo e continuar de onde parou. Máximo de 5 tentativas.
 
----
+### UI
 
-### Camada 5 — UI (Interface do Usuário)
+#### Desktop (Tkinter)
 
-#### Desktop — Tkinter
-
-**Componentes customizados:**
+Widgets customizados:
 
 | Widget | Herda de | Função |
-|--------|----------|--------|
-| `RoundedButton` | `tk.Canvas` | Botões arredondados com foco neon |
-| `NeonThemeBall` | `tk.Canvas` | Orb 3D com rastro esférico |
+|---|---|---|
+| `RoundedButton` | `tk.Canvas` | Botão com cantos arredondados e foco neon |
+| `NeonThemeBall` | `tk.Canvas` | Orb 3D que troca tema |
 | `NeonTabBar` | `tk.Frame` | Abas com persistência visual |
 | `UltimatePopup` | `tk.Toplevel` | Popups responsivos com scroll |
-| `ToolTip` | (custom) | Tooltips com posicionamento inteligente |
-| `ClickableLogo` | `tk.Frame` | Logo que abre popup de instruções |
+| `ToolTip` | classe própria | Tooltips com posicionamento inteligente |
+| `ClickableLogo` | `tk.Frame` | Logo que abre as instruções |
 
-**Sistema de temas:**
+Temas são um dicionário global. `COLORS` aponta para o tema ativo e é
+mutado quando o usuário troca.
 
-```python
-THEMES = {
-    "matrix": { "bg": "#040805", "fg": "#00ff41", ... },
-    "soft_dark": { "bg": "#1e1e24", "fg": "#cdd6f4", ... },
-    # ... 5 temas adicionais
-}
-COLORS = THEMES[theme_key]  # Muta globalmente
-```
-
-**Pulso Neon Global:**
+O pulso neon global funciona assim:
 - `GLOBAL_PULSE_STATE` é um dict compartilhado
-- Widgets registram-se em `_PULSE_SUBSCRIBERS`
-- Loop `_global_pulse_tick()` incrementa fase e redesenha
+- Cada widget registra um callback em `_PULSE_SUBSCRIBERS`
+- `_global_pulse_tick()` avança a fase e redesenha os inscritos
 
-#### Mobile — Kivy
+#### Mobile (Kivy)
 
-Aplicação `DarkPenBootKivyApp` com `ScreenManager`:
-- 6 telas: Home, Download, ISO, USB, Log, About
-- Botões `RoundedButton` customizados via `canvas.before`
-- Temas reativos via `StringProperty`
+`DarkPenBootKivyApp` com `ScreenManager`. Seis telas: Home, Download,
+ISO, USB, Log, About. Botões customizados via `canvas.before`.
 
 ---
 
-## 🔐 Segurança
+## Segurança
 
-### Bloqueios implementados
+Bloqueios implementados:
 
 | Bloqueio | Implementação |
-|----------|---------------|
+|---|---|
 | Disco 0 (sistema) | `if disk_num == 0: return None` |
-| ISO pequena | `if size < MIN_ISO_SIZE: abort` |
-| HTML disfarçado | `if _is_html_response(): renomeia .html_error` |
-| SHA256 divergente | Arquivo vira `.parcial` |
+| ISO muito pequena | `if size < MIN_ISO_SIZE: abort` |
+| HTML disfarçado de ISO | `_is_html_response()` → renomeia para `.html_error` |
+| SHA256 divergente | arquivo renomeado para `.parcial` |
 | Path traversal | `_sanitize_fat_relpath()` |
-| Windows sem admin | `is_admin()` check no início |
 
-### O que NÃO fazemos
-
-- ❌ Não apagamos arquivos do usuário (só do pendrive selecionado)
-- ❌ Não enviamos dados para servidores (tudo local)
-- ❌ Não usamos telemetria ou analytics
-- ❌ Não armazenamos senhas ou tokens
+O aplicativo não apaga arquivos fora do pendrive selecionado, não envia
+dados para servidores, não usa telemetria e não armazena credenciais.
 
 ---
 
-## 📦 Empacotamento
+## Empacotamento
 
 ### Windows (.exe)
 
-```powershell
-pyinstaller --onefile --windowed `
-    --name "DarkPenBoot" `
-    --distpath dist `
-    --workpath build `
-    DarkPenBoot_PRO1.py
+```
+pyinstaller --onefile --windowed --name DarkPenBoot DarkPenBoot_PRO1.py
 ```
 
-**Por que `--onefile`:** facilita distribuição (1 arquivo só).
-**Por que `--windowed`:** esconde o console no Windows.
+`--onefile` gera um único arquivo `.exe`. `--windowed` esconde o console.
 
-### Linux/macOS (binário)
+### Linux / macOS
 
-Mesmo comando, sem `--windowed` (o PyInstaller detecta a plataforma).
+Mesmo comando sem `--windowed`.
 
 ### Android (.apk)
 
 Buildozer + Kivy:
 
-```bash
+```
 buildozer android debug
 ```
 
 ---
 
-## 🟣 Inspiração NixOS
+## Reprodutibilidade do Build
 
-### Aplicação dos princípios
+O `build.yml` do GitHub Actions segue princípios inspirados no NixOS:
 
-| Princípio NixOS | Como aplicamos |
-|-----------------|----------------|
-| **Reprodutibilidade** | GitHub Actions com versões fixas (`python-version: '3.11'`) |
-| **Declaratividade** | `build.yml` descreve 100% do build |
-| **Isolamento** | Cada runner do GitHub é ambiente limpo |
-| **Verificabilidade** | SHA256 de cada artefato gerado |
-| **Multi-plataforma** | 4 OS em paralelo |
+| Princípio | Aplicação no projeto |
+|---|---|
+| Reprodutibilidade | Versões fixas (`python-version: '3.11'`) |
+| Declaratividade | O workflow descreve todo o processo |
+| Isolamento | Cada runner é ambiente limpo |
+| Verificabilidade | SHA256 dos artefatos gerados |
+| Multi-plataforma | Quatro runners em paralelo |
 
-### Filosofia aplicada ao código
-
-O princípio NixOS de "**o mesmo input sempre produz o mesmo output**" é aplicado em:
-- Seeds fixos nos nomes de arquivos (`diskpart_{pid}_{timestamp}.txt`)
-- Configurações serializáveis (JSON)
-- Zero dependências externas não declaradas
+Não é uma dependência de NixOS. É a mesma ideia de build determinístico,
+aplicada a um projeto Python comum.
 
 ---
 
-## 📊 Performance
+## Performance
 
-### Tempos medidos (ambiente de teste)
+Tempos medidos em máquina local (USB 3.0, ISO de 2 GB):
 
-| Operação | ISO 2 GB | ISO 5 GB |
-|----------|----------|----------|
-| Extração (7-Zip) | ~45s | ~2min |
-| Cópia em USB3 | ~25s | ~1min |
-| Cópia em USB2 | ~3min | ~8min |
-| DD em USB3 | ~40s | ~1min40s |
-| Verificação SHA256 | ~8s | ~20s |
+| Operação | Tempo |
+|---|---|
+| Extração com 7-Zip | ~45 s |
+| Cópia para USB 3 | ~25 s |
+| Cópia para USB 2 | ~3 min |
+| Gravação DD em USB 3 | ~40 s |
+| Verificação SHA256 | ~8 s |
 
-### Otimizações aplicadas
+Otimizações aplicadas:
 
-1. **Buffer adaptativo** por tier USB (USB3: 32 MB, USB2: 4 MB)
-2. **Check de cancelamento** a cada 512 KB (não a cada byte)
-3. **Detecção de stall** (aborta se travar por 3 min)
-4. **Reutilização de handles** quando possível
-5. **Cópia streaming** — não carrega arquivos na memória
+- Buffer adaptativo por tier USB (USB 3: 32 MB, USB 2: 4 MB)
+- Cancelamento verificado a cada 512 KB, não a cada byte
+- Detecção de travamento (aborta se o download ficar parado por 3 min)
+- Cópia em streaming — nunca carrega o arquivo todo na memória
 
 ---
 
-## 🗂️ Fluxo de Execução
-
-### Gravação em modo Extrair
+## Fluxo de Gravação (modo Extrair)
 
 ```
-┌─────────────┐
-│ Usuário     │
-│ clica em    │
-│ GRAVAR      │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 1. Valida ISO (pre-flight)          │
-│    • Size > 100 MB                  │
-│    • Assinatura ISO9660/UDF         │
-│    • SHA256 opcional                │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 2. Re-verifica pendrive             │
-│    • Serial igual?                  │
-│    • Não é disco 0?                 │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 3. Desabilita automount (Windows)   │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 4. Formata (diskpart/parted)        │
-│    • clean + convert MBR/GPT        │
-│    • create partition align=1024    │
-│    • format fs=NTFS quick           │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 5. Monta ISO (via Windows/loop)     │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 6. Copia arquivos                   │
-│    • Symlinks tratados              │
-│    • FAT: sanitize + case-check     │
-│    • USB3: buffer 32MB              │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 7. Aplica boot sector               │
-│    • bootsect.exe (Windows)         │
-│    • MBR isohybrid (Linux)          │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 8. Verifica integridade             │
-│    • Compara tamanhos               │
-│    • Confere arquivos               │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│ 9. Reativa automount                │
-│    • Mostra resumo                  │
-│    • Salva config                   │
-└─────────────────────────────────────┘
+1. Valida ISO
+     tamanho > 100 MB
+     assinatura ISO9660/UDF presente
+     SHA256 (opcional)
+
+2. Re-verifica o pendrive alvo
+     serial igual ao selecionado
+     não é o disco 0
+
+3. Desabilita automount (Windows)
+
+4. Formata
+     clean
+     convert MBR ou GPT
+     create partition align=1024
+     format fs=... quick
+
+5. Monta a ISO
+
+6. Copia arquivos
+     symlinks tratados
+     FAT: sanitiza nomes + checa duplicatas case-insensitive
+     buffer ajustado ao tier USB
+
+7. Aplica boot sector
+     bootsect.exe (Windows)
+     MBR isohybrid (Linux)
+
+8. Verifica integridade (tamanhos e contagem de arquivos)
+
+9. Reativa automount e mostra resumo
 ```
 
 ---
 
-## 🧪 Testes
+## Testes
 
-### Estratégia
+Estrutura em três níveis:
 
-Os testes seguem a pirâmide clássica:
+- Unitários: `tests/test_checksums.py`, `tests/test_config.py`
+- Integração: `tests/test_download.py`
+- End-to-end: gravação real em pendrive (manual)
+
+Executar:
 
 ```
-        ┌──────────┐
-        │   E2E    │  ← Manual (gravação real)
-        ├──────────┤
-        │  Integr. │  ← tests/test_download.py
-        ├──────────┤
-        │  Unit.   │  ← tests/test_checksums.py
-        │          │     tests/test_config.py
-        └──────────┘
-```
-
-### Executando os testes
-
-```bash
-# Todos os testes
 python -m pytest tests/ -v
-
-# Com cobertura
 python -m pytest tests/ --cov=. --cov-report=html
-
-# Teste específico
-python -m pytest tests/test_checksums.py::test_sha256
 ```
 
 ---
 
-## 📚 Referências
+## Referências
 
-- [PyInstaller — Manual oficial](https://pyinstaller.org/)
-- [Tkinter — Documentação Python](https://docs.python.org/3/library/tkinter.html)
-- [Kivy — Documentação](https://kivy.org/doc/stable/)
-- [Buildozer — README](https://buildozer.readthedocs.io/)
-- [NixOS — Governança](https://nixos.org/governance/)
-
----
-
-**📅 Última atualização:** v3.5.0
-**👤 Autor:** Adriano Rodrigues da Silva
-**🟣 Inspirado em:** [nixos.org](https://nixos.org)
+- PyInstaller — https://pyinstaller.org/
+- Tkinter — https://docs.python.org/3/library/tkinter.html
+- Kivy — https://kivy.org/doc/stable/
+- Buildozer — https://buildozer.readthedocs.io/
+- NixOS — https://nixos.org/governance/
 ```
